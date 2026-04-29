@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========== FORM VIEW ========== -->
+    <record id="view_monthly_evaluation_form" model="ir.ui.view">
+        <field name="name">bv.monthly.evaluation.form</field>
+        <field name="model">bv.monthly.evaluation</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Gửi đánh giá"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"
+                            groups="bv_danh_gia.group_evaluation_user"/>
+                    <button name="action_dept_approve" string="Trưởng khoa duyệt"
+                            type="object" class="btn-primary"
+                            invisible="state != 'submitted'"
+                            groups="bv_danh_gia.group_evaluation_dept_manager"/>
+                    <button name="action_hr_review" string="TCCB xét duyệt"
+                            type="object" class="btn-primary"
+                            invisible="state != 'dept_approved'"
+                            groups="bv_danh_gia.group_evaluation_hr"/>
+                    <button name="action_approve" string="BGĐ phê duyệt"
+                            type="object" class="btn-primary"
+                            invisible="state != 'hr_reviewed'"
+                            groups="bv_danh_gia.group_evaluation_director"/>
+                    <button name="action_reject" string="Trả lại"
+                            type="object" class="btn-danger"
+                            invisible="state in ('draft', 'approved', 'rejected')"
+                            groups="bv_danh_gia.group_evaluation_dept_manager"/>
+                    <button name="action_reset_draft" string="Đặt lại nháp"
+                            type="object"
+                            invisible="state not in ('rejected', 'submitted')"
+                            groups="bv_danh_gia.group_evaluation_user"/>
+                    <button string="Xuất Word (DOCX)" type="object"
+                            name="action_export_docx" class="btn-secondary"
+                            icon="fa-file-word-o"/>
+                    <button string="Giao diện đánh giá mới" type="object"
+                            name="action_open_custom_form" class="btn-secondary"
+                            icon="fa-paint-brush"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,dept_approved,hr_reviewed,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin cá nhân">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                            <field name="job_id"/>
+                            <field name="is_manager"/>
+                            <field name="template_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Kỳ đánh giá">
+                            <field name="month" readonly="state != 'draft'"/>
+                            <field name="year" readonly="state != 'draft'"/>
+                            <field name="quarter"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Tab 1: Tiêu chí chung -->
+                        <page string="I. Tiêu chí chung (30 điểm)">
+                            <field name="criteria_line_ids"
+                                   readonly="state not in ('draft', 'submitted', 'dept_approved')">
+                                <list editable="bottom">
+                                    <field name="parent_criteria_id" optional="show" readonly="1"/>
+                                    <field name="criteria_id" readonly="1"/>
+                                    <field name="max_score" readonly="1"/>
+                                    <field name="self_score"
+                                           readonly="state != 'draft'"/>
+                                    <field name="dept_score"
+                                           readonly="state != 'submitted'"
+                                           column_invisible="parent.state == 'draft'"/>
+                                    <field name="final_score" readonly="1"
+                                           decoration-bf="1"/>
+                                    <field name="note" optional="hide"/>
+                                </list>
+                            </field>
+                            <group>
+                                <field name="general_score" readonly="1"
+                                       class="oe_inline"/>
+                            </group>
+                        </page>
+
+                        <!-- Tab 2: Nhiệm vụ được giao -->
+                        <page string="II. Nhiệm vụ được giao">
+                            <field name="task_line_ids"
+                                   readonly="state not in ('draft', 'submitted')">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="task_name"/>
+                                    <field name="output_product"/>
+                                    <field name="deadline"/>
+                                    <field name="completion_date"/>
+                                    <field name="quantity_pct"/>
+                                    <field name="quality_pct"/>
+                                    <field name="progress_pct"/>
+                                    <field name="is_on_time" readonly="1"/>
+                                    <field name="note" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Tab 3: Kết quả thực hiện nhiệm vụ -->
+                        <page string="III. Điểm KQTHNV (70 điểm)">
+                            <group>
+                                <group string="Tiêu chí cơ bản (tất cả CBVC)">
+                                    <field name="pct_quantity"
+                                           readonly="state not in ('draft', 'submitted')"/>
+                                    <field name="pct_quality"
+                                           readonly="state not in ('draft', 'submitted')"/>
+                                    <field name="pct_progress"
+                                           readonly="state not in ('draft', 'submitted')"/>
+                                </group>
+                                <group string="Tiêu chí bổ sung (chức vụ lãnh đạo)"
+                                       invisible="not is_manager">
+                                    <field name="pct_field_result"
+                                           readonly="state not in ('draft', 'submitted')"/>
+                                    <field name="pct_organization"
+                                           readonly="state not in ('draft', 'submitted')"/>
+                                    <field name="pct_team_cohesion"
+                                           readonly="state not in ('draft', 'submitted')"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="task_score" readonly="1" class="oe_inline"/>
+                            </group>
+                        </page>
+
+                        <!-- Tab 4: Tổng hợp -->
+                        <page string="IV. Tổng hợp kết quả">
+                            <group>
+                                <group>
+                                    <field name="general_score" readonly="1"/>
+                                    <field name="task_score" readonly="1"/>
+                                    <field name="total_score" readonly="1"
+                                           decoration-bf="1" class="oe_inline"/>
+                                    <field name="classification" readonly="1"
+                                           decoration-bf="1"/>
+                                </group>
+                            </group>
+                            <separator string="Nhận xét"/>
+                            <group>
+                                <field name="strengths"
+                                       placeholder="Ưu điểm..."
+                                       readonly="state == 'approved'"/>
+                                <field name="weaknesses"
+                                       placeholder="Hạn chế, khuyết điểm..."
+                                       readonly="state == 'approved'"/>
+                                <field name="authority_comment"
+                                       placeholder="Ý kiến nhận xét của cấp có thẩm quyền..."
+                                       groups="bv_danh_gia.group_evaluation_dept_manager"
+                                       readonly="state == 'approved'"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========== LIST VIEW ========== -->
+    <record id="view_monthly_evaluation_tree" model="ir.ui.view">
+        <field name="name">bv.monthly.evaluation.tree</field>
+        <field name="model">bv.monthly.evaluation</field>
+        <field name="arch" type="xml">
+            <list decoration-success="classification == 'excellent'"
+                  decoration-info="classification == 'good'"
+                  decoration-warning="classification == 'fair'"
+                  decoration-danger="classification == 'poor'">
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="general_score"/>
+                <field name="task_score"/>
+                <field name="total_score" decoration-bf="1"/>
+                <field name="classification"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'approved'"
+                       decoration-info="state in ('submitted', 'dept_approved', 'hr_reviewed')"
+                       decoration-warning="state == 'draft'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========== SEARCH VIEW ========== -->
+    <record id="view_monthly_evaluation_search" model="ir.ui.view">
+        <field name="name">bv.monthly.evaluation.search</field>
+        <field name="model">bv.monthly.evaluation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <filter name="my_evaluations" string="Phiếu của tôi"
+                        domain="[('employee_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="draft" string="Nháp" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Đã gửi" domain="[('state', '=', 'submitted')]"/>
+                <filter name="approved" string="Đã duyệt" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <filter name="excellent" string="Xuất sắc" domain="[('classification', '=', 'excellent')]"/>
+                <filter name="good" string="Tốt" domain="[('classification', '=', 'good')]"/>
+                <filter name="fair" string="Hoàn thành" domain="[('classification', '=', 'fair')]"/>
+                <filter name="poor" string="Không HT" domain="[('classification', '=', 'poor')]"/>
+                <separator/>
+                <group expand="0" string="Nhóm theo">
+                    <filter name="group_department" string="Khoa/Phòng"
+                            context="{'group_by': 'department_id'}"/>
+                    <filter name="group_month" string="Tháng"
+                            context="{'group_by': 'month'}"/>
+                    <filter name="group_quarter" string="Quý"
+                            context="{'group_by': 'quarter'}"/>
+                    <filter name="group_state" string="Trạng thái"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_classification" string="Xếp loại"
+                            context="{'group_by': 'classification'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ========== ACTION ========== -->
+    <record id="action_monthly_evaluation" model="ir.actions.act_window">
+        <field name="name">Phiếu đánh giá hằng tháng</field>
+        <field name="res_model">bv.monthly.evaluation</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_my_evaluations': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo phiếu tự đánh giá tháng mới
+            </p>
+            <p>
+                Nhân viên tự chấm điểm kết quả thực hiện nhiệm vụ hằng tháng
+                theo Mẫu số 01, QĐ 06/2026/QĐ-UBND.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action for department managers -->
+    <record id="action_monthly_evaluation_dept" model="ir.actions.act_window">
+        <field name="name">Duyệt phiếu đánh giá (Khoa/Phòng)</field>
+        <field name="res_model">bv.monthly.evaluation</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'submitted')]</field>
+    </record>
+
+    <!-- Action for HR -->
+    <record id="action_monthly_evaluation_hr" model="ir.actions.act_window">
+        <field name="name">Xét duyệt phiếu đánh giá (TCCB)</field>
+        <field name="res_model">bv.monthly.evaluation</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'dept_approved')]</field>
+    </record>
+</odoo>

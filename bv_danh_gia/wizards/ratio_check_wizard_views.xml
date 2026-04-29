@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_ratio_check_wizard_form" model="ir.ui.view">
+        <field name="name">bv.ratio.check.wizard.form</field>
+        <field name="model">bv.ratio.check.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="check_type"/>
+                    <field name="quarter" invisible="check_type != 'quarterly'"/>
+                    <field name="year"/>
+                    <field name="department_id"/>
+                    <field name="max_ratio"/>
+                </group>
+                <group invisible="not result_html">
+                    <field name="result_html" nolabel="1" colspan="2"/>
+                </group>
+                <footer>
+                    <button name="action_check" string="Kiểm tra" type="object" class="btn-primary"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ratio_check_wizard" model="ir.actions.act_window">
+        <field name="name">Kiểm tra tỷ lệ xếp loại</field>
+        <field name="res_model">bv.ratio.check.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_ratio_check"
+              name="Kiểm tra tỷ lệ xếp loại"
+              parent="menu_reports"
+              action="action_ratio_check_wizard"
+              sequence="30"/>
+</odoo>

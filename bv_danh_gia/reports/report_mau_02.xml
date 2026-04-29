@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action -->
+    <record id="action_report_mau_02" model="ir.actions.report">
+        <field name="name">Phiếu xếp loại chất lượng CBVC (Mẫu số 02)</field>
+        <field name="model">bv.yearly.classification</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bv_danh_gia.report_mau_02_template</field>
+        <field name="report_file">bv_danh_gia.report_mau_02_template</field>
+        <field name="print_report_name">'Mau_02_%s_%s' % (object.employee_id.name, object.year)</field>
+        <field name="binding_model_id" ref="model_bv_yearly_classification"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Report Template -->
+    <template id="report_mau_02_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-size: 12px;">
+                        <!-- Header -->
+                        <div class="row">
+                            <div class="col-6 text-center">
+                                <strong>TÊN CƠ QUAN,</strong><br/>
+                                <strong>TỔ CHỨC, ĐƠN VỊ</strong><br/>
+                                <span>───────</span>
+                            </div>
+                            <div class="col-6 text-center">
+                                <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>
+                                <strong>Độc lập - Tự do - Hạnh phúc</strong><br/>
+                                <span>───────────────</span>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4 mb-3">
+                            <h4><strong>PHIẾU XẾP LOẠI CHẤT LƯỢNG CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC</strong></h4>
+                            <p>Năm <t t-out="doc.year"/></p>
+                        </div>
+
+                        <!-- Personal info -->
+                        <div class="mb-3">
+                            <p><strong>Họ và tên:</strong> <span t-field="doc.employee_id"/></p>
+                            <p><strong>Chức vụ, chức danh:</strong> <span t-field="doc.job_id"/></p>
+                            <p><strong>Đơn vị công tác:</strong> <span t-field="doc.department_id"/></p>
+                        </div>
+
+                        <!-- I. Tổng hợp -->
+                        <h5><strong>I. TỔNG HỢP KẾT QUẢ THEO DÕI, ĐÁNH GIÁ</strong></h5>
+                        <table class="table table-bordered table-sm text-center">
+                            <thead>
+                                <tr>
+                                    <th>Tháng</th>
+                                    <th>Tổng điểm theo dõi, đánh giá</th>
+                                    <th>Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>1</td><td><t t-out="doc.month_1"/></td><td/></tr>
+                                <tr><td>2</td><td><t t-out="doc.month_2"/></td><td/></tr>
+                                <tr><td>3</td><td><t t-out="doc.month_3"/></td><td/></tr>
+                                <tr class="font-weight-bold table-active">
+                                    <td><strong>Quý I</strong></td>
+                                    <td><strong><t t-out="'%.2f' % doc.quarter_1_avg"/></strong></td>
+                                    <td>Bằng điểm trung bình cộng của 03 tháng</td>
+                                </tr>
+                                <tr><td>4</td><td><t t-out="doc.month_4"/></td><td/></tr>
+                                <tr><td>5</td><td><t t-out="doc.month_5"/></td><td/></tr>
+                                <tr><td>6</td><td><t t-out="doc.month_6"/></td><td/></tr>
+                                <tr class="font-weight-bold table-active">
+                                    <td><strong>Quý II</strong></td>
+                                    <td><strong><t t-out="'%.2f' % doc.quarter_2_avg"/></strong></td>
+                                    <td>Bằng điểm trung bình cộng của 03 tháng</td>
+                                </tr>
+                                <tr><td>7</td><td><t t-out="doc.month_7"/></td><td/></tr>
+                                <tr><td>8</td><td><t t-out="doc.month_8"/></td><td/></tr>
+                                <tr><td>9</td><td><t t-out="doc.month_9"/></td><td/></tr>
+                                <tr class="font-weight-bold table-active">
+                                    <td><strong>Quý III</strong></td>
+                                    <td><strong><t t-out="'%.2f' % doc.quarter_3_avg"/></strong></td>
+                                    <td>Bằng điểm trung bình cộng của 03 tháng</td>
+                                </tr>
+                                <tr><td>10</td><td><t t-out="doc.month_10"/></td><td/></tr>
+                                <tr><td>11</td><td><t t-out="doc.month_11"/></td><td/></tr>
+                                <tr><td>12</td><td><t t-out="doc.month_12"/></td><td/></tr>
+                                <tr class="font-weight-bold table-active">
+                                    <td><strong>Quý IV</strong></td>
+                                    <td><strong><t t-out="'%.2f' % doc.quarter_4_avg"/></strong></td>
+                                    <td>Bằng điểm trung bình cộng của 03 tháng</td>
+                                </tr>
+                                <tr class="font-weight-bold table-primary">
+                                    <td><strong>Tổng điểm trung bình cả năm</strong></td>
+                                    <td><strong><t t-out="'%.2f' % doc.yearly_average"/></strong></td>
+                                    <td>Bằng điểm trung bình cộng của 12 tháng</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- II. Tự xếp loại -->
+                        <h5><strong>II. CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC TỰ ĐÁNH GIÁ, XẾP LOẠI CHẤT LƯỢNG</strong></h5>
+                        <t t-set="clf_labels" t-value="{'excellent': 'Hoàn thành xuất sắc nhiệm vụ', 'good': 'Hoàn thành tốt nhiệm vụ', 'fair': 'Hoàn thành nhiệm vụ', 'poor': 'Không hoàn thành nhiệm vụ'}"/>
+                        <ul>
+                            <t t-foreach="['excellent', 'good', 'fair', 'poor']" t-as="clf">
+                                <li>
+                                    <t t-if="doc.self_classification == clf">■</t>
+                                    <t t-else="">□</t>
+                                    <t t-out="clf_labels[clf]"/>
+                                </li>
+                            </t>
+                        </ul>
+
+                        <!-- III. Kết quả xếp loại -->
+                        <h5><strong>III. KẾT QUẢ XẾP LOẠI CHẤT LƯỢNG CỦA CẤP CÓ THẨM QUYỀN</strong></h5>
+                        <ul>
+                            <t t-foreach="['excellent', 'good', 'fair', 'poor']" t-as="clf">
+                                <li>
+                                    <t t-if="doc.final_classification == clf">■</t>
+                                    <t t-else="">□</t>
+                                    <t t-out="clf_labels[clf]"/>
+                                </li>
+                            </t>
+                        </ul>
+
+                        <!-- IV. Đề xuất -->
+                        <h5><strong>IV. ĐỀ XUẤT PHƯƠNG ÁN XỬ LÝ</strong></h5>
+                        <p><span t-field="doc.proposed_action"/></p>
+
+                        <!-- Signatures -->
+                        <div class="row mt-5">
+                            <div class="col-6 text-center">
+                                <p>......, ngày .... tháng .... năm ....</p>
+                                <p><strong>CBCCVC TỰ XẾP LOẠI</strong></p>
+                                <p><em>(Ký tên, ghi rõ họ tên)</em></p>
+                                <br/><br/><br/>
+                                <p><t t-out="doc.employee_id.name"/></p>
+                            </div>
+                            <div class="col-6 text-center">
+                                <p>......, ngày .... tháng .... năm ....</p>
+                                <p><strong>CẤP CÓ THẨM QUYỀN XẾP LOẠI</strong></p>
+                                <p><em>(Ký tên, ghi rõ họ tên)</em></p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

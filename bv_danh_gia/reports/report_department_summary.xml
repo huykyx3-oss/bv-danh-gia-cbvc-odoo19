@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action -->
+    <record id="action_report_dept_summary" model="ir.actions.report">
+        <field name="name">Báo cáo tổng hợp theo Khoa/Phòng</field>
+        <field name="model">bv.quarterly.summary</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bv_danh_gia.report_dept_summary_template</field>
+        <field name="report_file">bv_danh_gia.report_dept_summary_template</field>
+        <field name="print_report_name">'BC_TongHop_%s' % (object.department_id.name or 'all')</field>
+        <field name="binding_model_id" ref="model_bv_quarterly_summary"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Report Template -->
+    <template id="report_dept_summary_template">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page" style="font-size: 11px;">
+                    <div class="text-center mb-4">
+                        <h4><strong>BÁO CÁO TỔNG HỢP KẾT QUẢ ĐÁNH GIÁ, XẾP LOẠI</strong></h4>
+                    </div>
+
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr class="text-center table-active">
+                                <th>STT</th>
+                                <th>Họ và tên</th>
+                                <th>Chức vụ</th>
+                                <th>Khoa/Phòng</th>
+                                <th>Quý</th>
+                                <th>T1</th>
+                                <th>T2</th>
+                                <th>T3</th>
+                                <th>TB Quý</th>
+                                <th>Xếp loại</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="counter" t-value="0"/>
+                            <t t-foreach="docs" t-as="doc">
+                                <t t-set="counter" t-value="counter + 1"/>
+                                <t t-set="clf_short" t-value="{'excellent': 'Xuất sắc', 'good': 'Tốt', 'fair': 'Hoàn thành', 'poor': 'Không HT'}"/>
+                                <tr>
+                                    <td class="text-center"><t t-out="counter"/></td>
+                                    <td><span t-field="doc.employee_id"/></td>
+                                    <td><span t-field="doc.job_id"/></td>
+                                    <td><span t-field="doc.department_id"/></td>
+                                    <td class="text-center"><span t-field="doc.quarter"/></td>
+                                    <td class="text-center"><t t-out="doc.month1_score"/></td>
+                                    <td class="text-center"><t t-out="doc.month2_score"/></td>
+                                    <td class="text-center"><t t-out="doc.month3_score"/></td>
+                                    <td class="text-center"><strong><t t-out="'%.2f' % doc.average_score"/></strong></td>
+                                    <td class="text-center">
+                                        <t t-out="clf_short.get(doc.classification, '')"/>
+                                    </td>
+                                    <td class="text-center"><span t-field="doc.state"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <!-- Summary statistics -->
+                    <t t-set="total_docs" t-value="len(docs)"/>
+                    <t t-set="excellent_count" t-value="len([d for d in docs if d.classification == 'excellent'])"/>
+                    <t t-set="good_count" t-value="len([d for d in docs if d.classification == 'good'])"/>
+                    <t t-set="fair_count" t-value="len([d for d in docs if d.classification == 'fair'])"/>
+                    <t t-set="poor_count" t-value="len([d for d in docs if d.classification == 'poor'])"/>
+
+                    <div class="mt-3">
+                        <h6><strong>THỐNG KÊ:</strong></h6>
+                        <p>Tổng số: <strong><t t-out="total_docs"/></strong> người</p>
+                        <p>- Hoàn thành xuất sắc: <strong><t t-out="excellent_count"/></strong>
+                           (<t t-out="'%.1f' % (excellent_count * 100.0 / total_docs if total_docs else 0)"/>%)</p>
+                        <p>- Hoàn thành tốt: <strong><t t-out="good_count"/></strong>
+                           (<t t-out="'%.1f' % (good_count * 100.0 / total_docs if total_docs else 0)"/>%)</p>
+                        <p>- Hoàn thành: <strong><t t-out="fair_count"/></strong></p>
+                        <p>- Không hoàn thành: <strong><t t-out="poor_count"/></strong></p>
+                        <t t-if="good_count > 0">
+                            <p><strong>Tỷ lệ Xuất sắc / Tốt:
+                                <t t-out="'%.1f' % (excellent_count * 100.0 / good_count)"/>%
+                                <t t-if="excellent_count * 100.0 / good_count > 20">
+                                    <span style="color: red;"> (VƯỢT QUÁ 20%!)</span>
+                                </t>
+                            </strong></p>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

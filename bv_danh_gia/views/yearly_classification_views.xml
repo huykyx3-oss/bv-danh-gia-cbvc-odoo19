@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View -->
+    <record id="view_yearly_classification_form" model="ir.ui.view">
+        <field name="name">bv.yearly.classification.form</field>
+        <field name="model">bv.yearly.classification</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_populate_from_monthly" string="Lấy điểm từ phiếu tháng"
+                            type="object" class="btn-secondary"
+                            invisible="state != 'draft'"
+                            groups="bv_danh_gia.group_evaluation_hr"/>
+                    <button name="action_self_rate" string="Gửi tự xếp loại"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"
+                            groups="bv_danh_gia.group_evaluation_user"/>
+                    <button name="action_approve" string="Phê duyệt xếp loại"
+                            type="object" class="btn-primary"
+                            invisible="state != 'self_rated'"
+                            groups="bv_danh_gia.group_evaluation_director"/>
+                    <button string="Xuất Word (DOCX)" type="object"
+                            name="action_export_docx" class="btn-secondary"
+                            icon="fa-file-word-o"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,self_rated,approved"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                            <field name="job_id"/>
+                        </group>
+                        <group>
+                            <field name="year" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="I. Tổng hợp kết quả theo dõi, đánh giá">
+                            <group>
+                                <group string="Quý I">
+                                    <field name="month_1"/>
+                                    <field name="month_2"/>
+                                    <field name="month_3"/>
+                                    <field name="quarter_1_avg" readonly="1" decoration-bf="1"/>
+                                </group>
+                                <group string="Quý II">
+                                    <field name="month_4"/>
+                                    <field name="month_5"/>
+                                    <field name="month_6"/>
+                                    <field name="quarter_2_avg" readonly="1" decoration-bf="1"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Quý III">
+                                    <field name="month_7"/>
+                                    <field name="month_8"/>
+                                    <field name="month_9"/>
+                                    <field name="quarter_3_avg" readonly="1" decoration-bf="1"/>
+                                </group>
+                                <group string="Quý IV">
+                                    <field name="month_10"/>
+                                    <field name="month_11"/>
+                                    <field name="month_12"/>
+                                    <field name="quarter_4_avg" readonly="1" decoration-bf="1"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="yearly_average" readonly="1"
+                                       decoration-bf="1" string="Tổng điểm trung bình cả năm"/>
+                            </group>
+                        </page>
+
+                        <page string="II. Xếp loại chất lượng">
+                            <group>
+                                <group string="CBVC tự đánh giá, xếp loại">
+                                    <field name="self_classification"
+                                           readonly="state != 'draft'"/>
+                                </group>
+                                <group string="Cấp có thẩm quyền xếp loại">
+                                    <field name="final_classification"
+                                           readonly="state == 'approved'"
+                                           groups="bv_danh_gia.group_evaluation_director"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="III. Đề xuất phương án xử lý">
+                            <field name="proposed_action"
+                                   placeholder="Đề xuất phương án xử lý..."
+                                   readonly="state == 'approved'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_yearly_classification_tree" model="ir.ui.view">
+        <field name="name">bv.yearly.classification.tree</field>
+        <field name="model">bv.yearly.classification</field>
+        <field name="arch" type="xml">
+            <list decoration-success="final_classification == 'excellent'"
+                  decoration-info="final_classification == 'good'"
+                  decoration-warning="final_classification == 'fair'"
+                  decoration-danger="final_classification == 'poor'">
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="year"/>
+                <field name="yearly_average" decoration-bf="1"/>
+                <field name="self_classification"/>
+                <field name="final_classification" decoration-bf="1"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_yearly_classification" model="ir.actions.act_window">
+        <field name="name">Xếp loại chất lượng năm</field>
+        <field name="res_model">bv.yearly.classification</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo phiếu xếp loại chất lượng năm (Mẫu số 02)
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View -->
+    <record id="view_evaluation_config_form" model="ir.ui.view">
+        <field name="name">bv.evaluation.config.form</field>
+        <field name="model">bv.evaluation.config</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="year"/>
+                        <field name="active"/>
+                    </group>
+                    <notebook>
+                        <page string="Tỷ lệ xếp loại">
+                            <group>
+                                <group string="Giới hạn tỷ lệ">
+                                    <field name="max_excellent_ratio"/>
+                                    <field name="max_excellent_ratio_special"/>
+                                    <field name="min_group_size_for_ratio"/>
+                                </group>
+                                <group string="Cảnh báo tự động">
+                                    <field name="auto_warn_ratio"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Quy trình phê duyệt">
+                            <group>
+                                <group string="Tự động duyệt">
+                                    <field name="auto_approve_dept"/>
+                                    <field name="auto_approve_hr"/>
+                                    <field name="auto_approve_director"/>
+                                </group>
+                                <group string="Thông báo">
+                                    <field name="notify_on_submit"/>
+                                    <field name="notify_on_approve"/>
+                                    <field name="notify_on_reject"/>
+                                    <field name="notify_ratio_warning"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="not auto_approve_director">
+                                <strong>Cảnh báo:</strong> Tự động phê duyệt cấp BGĐ không được khuyến nghị.
+                                Tất cả phiếu sẽ được duyệt tự động mà không qua kiểm tra của Ban Giám đốc.
+                            </div>
+                        </page>
+
+                        <page string="Thời hạn (Deadline)">
+                            <group>
+                                <group>
+                                    <field name="monthly_submit_deadline_day"/>
+                                    <field name="quarterly_deadline_day"/>
+                                    <field name="quarterly_report_deadline_day"/>
+                                </group>
+                                <group>
+                                    <field name="reminder_days_before"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_evaluation_config_tree" model="ir.ui.view">
+        <field name="name">bv.evaluation.config.tree</field>
+        <field name="model">bv.evaluation.config</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="year"/>
+                <field name="max_excellent_ratio"/>
+                <field name="auto_approve_dept"/>
+                <field name="auto_approve_hr"/>
+                <field name="monthly_submit_deadline_day"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_evaluation_config" model="ir.actions.act_window">
+        <field name="name">Cấu hình hệ thống đánh giá</field>
+        <field name="res_model">bv.evaluation.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo cấu hình cho năm đánh giá
+            </p>
+            <p>Cấu hình tỷ lệ xếp loại, quy trình phê duyệt, thời hạn deadline và thông báo.</p>
+        </field>
+    </record>
+</odoo>

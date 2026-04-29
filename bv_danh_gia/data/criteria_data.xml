@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- ============================================ -->
+    <!-- I. Phẩm chất chính trị, đạo đức (10 điểm)   -->
+    <!-- ============================================ -->
+    <record id="criteria_group_1" model="bv.evaluation.criteria">
+        <field name="name">Phẩm chất chính trị, đạo đức, văn hóa thực thi công vụ và ý thức kỷ luật</field>
+        <field name="code">I</field>
+        <field name="category">general</field>
+        <field name="max_score">10</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="criteria_1_1" model="bv.evaluation.criteria">
+        <field name="name">Phẩm chất chính trị, phẩm chất đạo đức, văn hóa thực thi công vụ, nhiệm vụ</field>
+        <field name="code">I.1</field>
+        <field name="parent_id" ref="criteria_group_1"/>
+        <field name="category">general</field>
+        <field name="max_score">5</field>
+        <field name="sequence">11</field>
+    </record>
+    <record id="criteria_1_2" model="bv.evaluation.criteria">
+        <field name="name">Ý thức kỷ luật, kỷ cương trong thực thi công vụ, nhiệm vụ</field>
+        <field name="code">I.2</field>
+        <field name="parent_id" ref="criteria_group_1"/>
+        <field name="category">general</field>
+        <field name="max_score">5</field>
+        <field name="sequence">12</field>
+    </record>
+
+    <!-- ============================================ -->
+    <!-- II. Năng lực chuyên môn (10 điểm)            -->
+    <!-- ============================================ -->
+    <record id="criteria_group_2" model="bv.evaluation.criteria">
+        <field name="name">Năng lực chuyên môn, nghiệp vụ; tinh thần trách nhiệm; thái độ phục vụ</field>
+        <field name="code">II</field>
+        <field name="category">general</field>
+        <field name="max_score">10</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="criteria_2_1" model="bv.evaluation.criteria">
+        <field name="name">Năng lực chuyên môn, nghiệp vụ theo yêu cầu của vị trí việc làm</field>
+        <field name="code">II.1</field>
+        <field name="parent_id" ref="criteria_group_2"/>
+        <field name="category">general</field>
+        <field name="max_score">2.5</field>
+        <field name="sequence">21</field>
+    </record>
+    <record id="criteria_2_2" model="bv.evaluation.criteria">
+        <field name="name">Khả năng đáp ứng yêu cầu thực thi nhiệm vụ được giao</field>
+        <field name="code">II.2</field>
+        <field name="parent_id" ref="criteria_group_2"/>
+        <field name="category">general</field>
+        <field name="max_score">2.5</field>
+        <field name="sequence">22</field>
+    </record>
+    <record id="criteria_2_3" model="bv.evaluation.criteria">
+        <field name="name">Tinh thần trách nhiệm trong thực thi công vụ, nhiệm vụ</field>
+        <field name="code">II.3</field>
+        <field name="parent_id" ref="criteria_group_2"/>
+        <field name="category">general</field>
+        <field name="max_score">2.5</field>
+        <field name="sequence">23</field>
+    </record>
+    <record id="criteria_2_4" model="bv.evaluation.criteria">
+        <field name="name">Thái độ phục vụ người dân, doanh nghiệp và khả năng phối hợp với đồng nghiệp</field>
+        <field name="code">II.4</field>
+        <field name="parent_id" ref="criteria_group_2"/>
+        <field name="category">general</field>
+        <field name="max_score">2.5</field>
+        <field name="sequence">24</field>
+    </record>
+
+    <!-- ============================================ -->
+    <!-- III. Năng lực đổi mới, sáng tạo (10 điểm)   -->
+    <!-- ============================================ -->
+    <record id="criteria_group_3" model="bv.evaluation.criteria">
+        <field name="name">Năng lực đổi mới, sáng tạo, dám nghĩ, dám làm, dám chịu trách nhiệm</field>
+        <field name="code">III</field>
+        <field name="category">general</field>
+        <field name="max_score">10</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="criteria_3_1" model="bv.evaluation.criteria">
+        <field name="name">Có sản phẩm, giải pháp đột phá, sáng tạo đem lại giá trị, hiệu quả thiết thực</field>
+        <field name="code">III.1</field>
+        <field name="parent_id" ref="criteria_group_3"/>
+        <field name="category">general</field>
+        <field name="max_score">2.5</field>
+        <field name="sequence">31</field>
+    </record>
+    <record id="criteria_3_2" model="bv.evaluation.criteria">
+        <field name="name">Sẵn sàng tham gia thực hiện nhiệm vụ chính trị đặc biệt quan trọng, đột xuất, phức tạp</field>
+        <field name="code">III.2</field>
+        <field name="parent_id" ref="criteria_group_3"/>
+        <field name="category">general</field>
+        <field name="max_score">2.5</field>
+        <field name="sequence">32</field>
+    </record>
+    <record id="criteria_3_3" model="bv.evaluation.criteria">
+        <field name="name">Có tinh thần chịu trách nhiệm trước kết quả công việc; chủ động nhận trách nhiệm khi có sai sót</field>
+        <field name="code">III.3</field>
+        <field name="parent_id" ref="criteria_group_3"/>
+        <field name="category">general</field>
+        <field name="max_score">2.5</field>
+        <field name="sequence">33</field>
+    </record>
+    <record id="criteria_3_4" model="bv.evaluation.criteria">
+        <field name="name">Chủ động đưa ra quyết định trong phạm vi thẩm quyền, không né tránh; có tinh thần tiên phong</field>
+        <field name="code">III.4</field>
+        <field name="parent_id" ref="criteria_group_3"/>
+        <field name="category">general</field>
+        <field name="max_score">2.5</field>
+        <field name="sequence">34</field>
+    </record>
+</odoo>

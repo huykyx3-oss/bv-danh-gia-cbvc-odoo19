@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action -->
+    <record id="action_report_mau_01" model="ir.actions.report">
+        <field name="name">Phiếu theo dõi, đánh giá CBVC (Mẫu số 01)</field>
+        <field name="model">bv.monthly.evaluation</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bv_danh_gia.report_mau_01_template</field>
+        <field name="report_file">bv_danh_gia.report_mau_01_template</field>
+        <field name="print_report_name">'Mau_01_%s_%s_%s' % (object.employee_id.name, object.month, object.year)</field>
+        <field name="binding_model_id" ref="model_bv_monthly_evaluation"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Report Template -->
+    <template id="report_mau_01_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-size: 12px;">
+                        <!-- Header -->
+                        <div class="row">
+                            <div class="col-6 text-center">
+                                <strong>TÊN CƠ QUAN, TỔ CHỨC, ĐƠN VỊ</strong><br/>
+                                <span t-field="doc.department_id"/>
+                            </div>
+                            <div class="col-6 text-center">
+                                <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>
+                                <strong>Độc lập - Tự do - Hạnh phúc</strong><br/>
+                                <span>──────────────</span>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4 mb-3">
+                            <h4><strong>PHIẾU THEO DÕI, ĐÁNH GIÁ CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC</strong></h4>
+                            <p>(Kỳ theo dõi, đánh giá: Tháng <t t-out="doc.month"/> năm <t t-out="doc.year"/>)</p>
+                        </div>
+
+                        <!-- Personal info -->
+                        <div class="mb-3">
+                            <p><strong>Họ và tên:</strong> <span t-field="doc.employee_id"/></p>
+                            <p><strong>Chức vụ, chức danh:</strong> <span t-field="doc.job_id"/></p>
+                            <p><strong>Đơn vị công tác:</strong> <span t-field="doc.department_id"/></p>
+                        </div>
+
+                        <!-- I. Tiêu chí chung -->
+                        <h5><strong>I. KẾT QUẢ THEO DÕI, ĐÁNH GIÁ THEO TIÊU CHÍ CHUNG</strong></h5>
+                        <table class="table table-bordered table-sm">
+                            <thead>
+                                <tr class="text-center">
+                                    <th style="width:5%">TT</th>
+                                    <th>Tiêu chí chấm điểm</th>
+                                    <th style="width:10%">Điểm tối đa</th>
+                                    <th style="width:12%">Điểm tự chấm</th>
+                                    <th style="width:12%">Điểm TK chấm</th>
+                                    <th style="width:12%">Điểm cuối</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-set="counter" t-value="0"/>
+                                <t t-foreach="doc.criteria_line_ids" t-as="line">
+                                    <t t-set="counter" t-value="counter + 1"/>
+                                    <tr>
+                                        <td class="text-center"><t t-out="counter"/></td>
+                                        <td><span t-field="line.criteria_id"/></td>
+                                        <td class="text-center"><span t-field="line.max_score"/></td>
+                                        <td class="text-center"><span t-field="line.self_score"/></td>
+                                        <td class="text-center"><span t-field="line.dept_score"/></td>
+                                        <td class="text-center"><strong><span t-field="line.final_score"/></strong></td>
+                                    </tr>
+                                </t>
+                                <tr class="font-weight-bold">
+                                    <td colspan="2" class="text-right"><strong>Tổng cộng</strong></td>
+                                    <td class="text-center"><strong>30</strong></td>
+                                    <td class="text-center">
+                                        <strong><t t-out="sum(doc.criteria_line_ids.mapped('self_score'))"/></strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong><t t-out="sum(doc.criteria_line_ids.mapped('dept_score'))"/></strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong><t t-out="doc.general_score"/></strong>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- II. Tổng hợp -->
+                        <h5><strong>II. TỔNG HỢP KẾT QUẢ THEO DÕI, ĐÁNH GIÁ</strong></h5>
+                        <p>1. Điểm tiêu chí chung: <strong><t t-out="doc.general_score"/></strong></p>
+                        <p>2. Điểm tiêu chí kết quả thực hiện nhiệm vụ:</p>
+                        <ul>
+                            <li>a - % Số lượng: <strong><t t-out="doc.pct_quantity"/>%</strong></li>
+                            <li>b - % Chất lượng: <strong><t t-out="doc.pct_quality"/>%</strong></li>
+                            <li>c - % Tiến độ: <strong><t t-out="doc.pct_progress"/>%</strong></li>
+                            <t t-if="doc.is_manager">
+                                <li>d - % Kết quả lĩnh vực: <strong><t t-out="doc.pct_field_result"/>%</strong></li>
+                                <li>đ - % Tổ chức triển khai: <strong><t t-out="doc.pct_organization"/>%</strong></li>
+                                <li>e - % Đoàn kết: <strong><t t-out="doc.pct_team_cohesion"/>%</strong></li>
+                            </t>
+                        </ul>
+                        <p>Điểm tiêu chí KQTHNV: <strong><t t-out="'%.2f' % doc.task_score"/> điểm</strong></p>
+                        <p>3. <strong>Tổng điểm theo dõi, đánh giá: <t t-out="'%.2f' % doc.total_score"/> điểm</strong></p>
+                        <p>4. Ưu điểm: <span t-field="doc.strengths"/></p>
+                        <p>5. Hạn chế, khuyết điểm: <span t-field="doc.weaknesses"/></p>
+                        <p>6. Ý kiến nhận xét của cấp có thẩm quyền: <span t-field="doc.authority_comment"/></p>
+
+                        <!-- Signatures -->
+                        <div class="row mt-5">
+                            <div class="col-6 text-center">
+                                <p>......, ngày .... tháng .... năm ....</p>
+                                <p><strong>CBCCVC TỰ ĐÁNH GIÁ</strong></p>
+                                <p><em>(Ký tên, ghi rõ họ tên)</em></p>
+                                <br/><br/><br/>
+                                <p><t t-out="doc.employee_id.name"/></p>
+                            </div>
+                            <div class="col-6 text-center">
+                                <p>......, ngày .... tháng .... năm ....</p>
+                                <p><strong>CẤP CÓ THẨM QUYỀN</strong></p>
+                                <p><strong>THEO DÕI, ĐÁNH GIÁ</strong></p>
+                                <p><em>(Ký tên, ghi rõ họ tên)</em></p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

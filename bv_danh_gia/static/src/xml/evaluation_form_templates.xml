@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="bv_danh_gia.EvaluationFormView">
+    <div style="background:#f5f3ee;min-height:100vh;padding:24px;">
+        <t t-if="state.loading">
+            <div style="text-align:center;padding:60px;">
+                <i class="fa fa-spinner fa-spin fa-3x" style="color:#c9a84c;"/>
+                <p style="margin-top:16px;color:#6b6760;">Đang tải phiếu đánh giá...</p>
+            </div>
+        </t>
+        <t t-elif="!state.record">
+            <div style="text-align:center;padding:60px;">
+                <p>Không tìm thấy phiếu đánh giá.</p>
+                <button class="btn btn-primary" t-on-click="goBack">Quay lại</button>
+            </div>
+        </t>
+        <t t-else="">
+            <!-- HEADER -->
+            <div class="bv-page-header">
+                <div class="bv-header-inner">
+                    <div class="bv-header-emblem">&#x1F3E5;</div>
+                    <div class="bv-header-text">
+                        <div class="bv-header-org">Sở Y tế · Bệnh viện Đa khoa tỉnh</div>
+                        <div class="bv-header-title">Phiếu Theo Dõi, Đánh Giá Viên Chức</div>
+                        <div class="bv-header-sub">
+                            <t t-esc="state.record.is_manager ? 'Mẫu số 02a — Viên chức lãnh đạo, quản lý' : 'Mẫu số 01 — Viên chức không giữ chức vụ'"/>
+                        </div>
+                    </div>
+                    <div class="bv-header-badge">
+                        <t t-esc="monthLabel"/> / <t t-esc="state.record.year"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bv-eval-layout">
+                <!-- ═══ MAIN FORM ═══ -->
+                <div class="bv-form-main">
+
+                    <!-- Progress bar -->
+                    <div class="bv-form-progress">
+                        <div class="bv-form-progress-label">
+                            <span>Tiến độ hoàn thành biểu mẫu</span>
+                            <span><t t-esc="state.filledCount"/> / <t t-esc="state.totalCriteria"/> tiêu chí</span>
+                        </div>
+                        <div class="bv-fp-bar">
+                            <div class="bv-fp-fill" t-att-style="'width:' + progressPct + '%'"/>
+                        </div>
+                    </div>
+
+                    <!-- Personal info card -->
+                    <div class="bv-card">
+                        <div class="bv-section-header">
+                            <span class="bv-section-badge">Thông tin</span>
+                            <span class="bv-section-title">Thông tin cá nhân</span>
+                        </div>
+                        <div class="bv-info-grid">
+                            <div class="bv-full">
+                                <div class="bv-field-label">Họ và tên</div>
+                                <div class="bv-field-value"><t t-esc="state.record.employee_id[1]"/></div>
+                            </div>
+                            <div>
+                                <div class="bv-field-label">Đơn vị công tác</div>
+                                <div class="bv-field-value"><t t-esc="state.record.department_id ? state.record.department_id[1] : ''"/></div>
+                            </div>
+                            <div>
+                                <div class="bv-field-label">Chức vụ, chức danh</div>
+                                <div class="bv-field-value"><t t-esc="state.record.job_id ? state.record.job_id[1] : ''"/></div>
+                            </div>
+                            <div>
+                                <div class="bv-field-label">Kỳ đánh giá</div>
+                                <div class="bv-field-value"><t t-esc="monthLabel"/> / <t t-esc="state.record.year"/></div>
+                            </div>
+                            <div>
+                                <div class="bv-field-label">Trạng thái</div>
+                                <div class="bv-field-value" style="text-transform:uppercase;font-size:12px;letter-spacing:.06em;">
+                                    <t t-esc="state.record.state"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ═══ PHẦN I: TIÊU CHÍ CHUNG ═══ -->
+                    <div class="bv-part-divider"><span>PHẦN I — TIÊU CHÍ CHUNG (30 điểm)</span></div>
+
+                    <t t-foreach="state.criteria_groups" t-as="group" t-key="group.id">
+                        <div class="bv-card">
+                            <div class="bv-section-header">
+                                <span class="bv-section-badge">Nhóm <t t-esc="group_index + 1"/></span>
+                                <span class="bv-section-title"><t t-esc="group.name"/></span>
+                                <span class="bv-section-maxpts">Tối đa: <t t-esc="group.maxScore"/> điểm</span>
+                            </div>
+
+                            <t t-foreach="group.criteria" t-as="criterion" t-key="criterion.lineId">
+                                <div class="bv-subsection">
+                                    <div class="bv-subsection-header">
+                                        <div class="bv-subsection-num"><t t-esc="criterion_index + 1"/></div>
+                                        <div class="bv-subsection-title"><t t-esc="criterion.name"/></div>
+                                        <div class="bv-subsection-pts"><t t-esc="criterion.maxScore"/> điểm</div>
+                                        <div class="bv-subsection-score">
+                                            <t t-if="criterion.selectedScore > 0"><t t-esc="criterion.selectedScore"/> đ</t>
+                                            <t t-else="">—</t>
+                                        </div>
+                                    </div>
+                                    <div class="bv-criteria-options">
+                                        <t t-foreach="criterion.options" t-as="opt" t-key="opt.score">
+                                            <div t-att-class="'bv-option-item' + (criterion.selectedScore === opt.score ? ' selected' : '')"
+                                                 t-on-click="() => this.selectCriteriaScore(criterion.lineId, opt.score)">
+                                                <div class="bv-radio-dot"/>
+                                                <div class="bv-option-content">
+                                                    <div class="bv-option-level"><t t-esc="opt.label"/></div>
+                                                    <t t-if="opt.desc">
+                                                        <div class="bv-option-desc"><t t-esc="opt.desc"/></div>
+                                                    </t>
+                                                </div>
+                                                <span class="bv-option-score-badge"><t t-esc="opt.score"/> đ</span>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+
+                    <!-- ═══ PHẦN II: KẾT QUẢ THỰC HIỆN NHIỆM VỤ ═══ -->
+                    <div class="bv-part-divider"><span>PHẦN II — KẾT QUẢ THỰC HIỆN NHIỆM VỤ (70 điểm)</span></div>
+
+                    <div class="bv-card">
+                        <div class="bv-section-header">
+                            <span class="bv-section-badge">Phần II</span>
+                            <span class="bv-section-title">Kết quả thực hiện nhiệm vụ</span>
+                            <span class="bv-section-maxpts">Tối đa: 70 điểm</span>
+                        </div>
+
+                        <t t-foreach="state.task_fields" t-as="tf" t-key="tf.key">
+                            <div style="border-bottom:1px solid #eceae4;padding:20px 24px;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#0f2044;color:white;border-radius:6px;font-size:12px;font-weight:700;">
+                                        <t t-esc="tf.label.charAt(0)"/>
+                                    </span>
+                                    <span style="font-weight:600;font-size:13.5px;flex:1;"><t t-esc="tf.label"/></span>
+                                    <span style="font-size:12px;color:#6b6760;background:#eceae4;padding:2px 8px;border-radius:10px;">
+                                        Tối đa: <t t-esc="tf.maxPts"/> điểm
+                                    </span>
+                                    <span style="font-weight:700;color:#c9a84c;font-size:14px;">
+                                        <t t-if="tf.value > 0"><t t-esc="tf.value"/> đ</t>
+                                        <t t-else="">—</t>
+                                    </span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:8px;">
+                                    <t t-foreach="taskFieldOptions[tf.key] || []" t-as="opt" t-key="opt.score">
+                                        <div t-att-class="'bv-option-item' + (tf.value === opt.score ? ' selected' : '')"
+                                             t-on-click="() => this.selectTaskScore(tf.key, opt.score)">
+                                            <div class="bv-radio-dot"/>
+                                            <div class="bv-option-content">
+                                                <div class="bv-option-level"><t t-esc="opt.label"/></div>
+                                            </div>
+                                            <span class="bv-option-score-badge"><t t-esc="opt.score"/> đ</span>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- Action bar -->
+                    <div class="bv-action-bar">
+                        <button class="btn" style="background:transparent;border:1.5px solid #d8d4cc;color:#1e1e1e;padding:11px 24px;border-radius:8px;font-weight:600;cursor:pointer;"
+                                t-on-click="openStandardForm">
+                            <i class="fa fa-th-list"/> Xem dạng chuẩn
+                        </button>
+                        <t t-if="!isReadonly">
+                            <button class="btn" style="background:transparent;border:1.5px solid #d8d4cc;color:#1e1e1e;padding:11px 24px;border-radius:8px;font-weight:600;cursor:pointer;"
+                                    t-on-click="saveDraft" t-att-disabled="state.saving">
+                                <i class="fa fa-save"/> Lưu nháp
+                            </button>
+                            <button class="btn" style="background:#2d7a4f;color:white;padding:11px 24px;border-radius:8px;font-weight:600;border:none;cursor:pointer;"
+                                    t-on-click="submitForm" t-att-disabled="state.saving">
+                                <i class="fa fa-paper-plane"/> Nộp phiếu đánh giá
+                            </button>
+                        </t>
+                        <t t-else="">
+                            <button class="btn" style="background:#0f2044;color:white;padding:11px 24px;border-radius:8px;font-weight:600;border:none;cursor:pointer;"
+                                    t-on-click="goBack">
+                                <i class="fa fa-arrow-left"/> Quay lại
+                            </button>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ═══ SCORE PANEL ═══ -->
+                <div class="bv-score-panel">
+                    <div class="bv-score-panel-header">
+                        <span style="font-size:18px;">&#x1F3AF;</span>
+                        <h3>Bảng điểm thời gian thực</h3>
+                    </div>
+                    <div class="bv-score-total-display">
+                        <div class="bv-score-circle" t-att-style="'background:conic-gradient(#c9a84c ' + scoreDeg + 'deg, #eceae4 0deg);'">
+                            <div class="bv-score-number"><t t-esc="state.totalScore"/></div>
+                            <div class="bv-score-denom">/ 100</div>
+                        </div>
+                        <div t-att-class="'bv-score-label ' + classificationDisplay.css">
+                            <t t-esc="classificationDisplay.label"/>
+                        </div>
+                    </div>
+                    <div class="bv-score-breakdown">
+                        <div class="bv-score-row">
+                            <div style="flex:1;">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span class="bv-score-row-label">Phần I – Tiêu chí chung</span>
+                                    <span class="bv-score-row-val"><t t-esc="state.totalGeneral"/><span class="bv-of"> / 30</span></span>
+                                </div>
+                                <div class="bv-progress-bar"><div class="bv-progress-fill" t-att-style="'width:' + generalPct + '%'"/></div>
+                            </div>
+                        </div>
+
+                        <t t-foreach="state.criteria_groups" t-as="g" t-key="g.id">
+                            <div class="bv-score-row" style="padding-left:12px;">
+                                <span class="bv-score-row-label" style="font-size:11.5px;">· <t t-esc="g.name.substring(0, 30)"/>...</span>
+                                <span class="bv-score-row-val" style="font-size:12px;">
+                                    <t t-esc="Math.round(g.currentScore * 10) / 10"/><span class="bv-of"> /<t t-esc="g.maxScore"/></span>
+                                </span>
+                            </div>
+                        </t>
+
+                        <div class="bv-score-row">
+                            <div style="flex:1;">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span class="bv-score-row-label">Phần II – Kết quả nhiệm vụ</span>
+                                    <span class="bv-score-row-val"><t t-esc="state.totalTask"/><span class="bv-of"> / 70</span></span>
+                                </div>
+                                <div class="bv-progress-bar"><div class="bv-progress-fill" t-att-style="'width:' + taskPct + '%'"/></div>
+                            </div>
+                        </div>
+
+                        <div class="bv-score-row" style="border-top:2px solid #c9a84c;margin-top:4px;padding-top:12px;">
+                            <span class="bv-score-row-label" style="font-weight:700;">Tổng điểm</span>
+                            <span class="bv-score-row-val" style="font-size:16px;color:#c9a84c;">
+                                <t t-esc="state.totalScore"/><span class="bv-of"> /100</span>
+                            </span>
+                        </div>
+
+                        <div style="margin-top:16px;padding:12px;background:#f5f3ee;border-radius:8px;font-size:11.5px;color:#6b6760;line-height:1.8;">
+                            <div style="font-weight:700;color:#1e1e1e;margin-bottom:6px;">Thang xếp loại:</div>
+                            <div>&#x1F947; <strong>Xuất sắc</strong>: ≥ 90 điểm</div>
+                            <div>&#x1F948; <strong>Tốt</strong>: 75 – 89 điểm</div>
+                            <div>&#x1F949; <strong>Hoàn thành</strong>: 50 – 74 điểm</div>
+                            <div>&#x274C; <strong>Không hoàn thành</strong>: &lt; 50 điểm</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

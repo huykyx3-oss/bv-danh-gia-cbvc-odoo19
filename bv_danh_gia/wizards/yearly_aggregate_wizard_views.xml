@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_yearly_aggregate_wizard_form" model="ir.ui.view">
+        <field name="name">bv.yearly.aggregate.wizard.form</field>
+        <field name="model">bv.yearly.aggregate.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="year"/>
+                    <field name="department_id"/>
+                </group>
+                <footer>
+                    <button name="action_aggregate" string="Tổng hợp" type="object" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_yearly_aggregate_wizard" model="ir.actions.act_window">
+        <field name="name">Tổng hợp xếp loại năm</field>
+        <field name="res_model">bv.yearly.aggregate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_yearly_aggregate"
+              name="Tổng hợp năm"
+              parent="menu_reports"
+              action="action_yearly_aggregate_wizard"
+              sequence="20"/>
+</odoo>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Menu -->
+    <menuitem id="menu_evaluation_root"
+              name="Đánh giá CBVC"
+              web_icon="bv_danh_gia,static/description/icon.png"
+              sequence="50"/>
+
+    <!-- Dashboard -->
+    <menuitem id="menu_dashboard"
+              name="Dashboard"
+              parent="menu_evaluation_root"
+              action="action_evaluation_dashboard"
+              sequence="5"/>
+
+    <!-- Đánh giá -->
+    <menuitem id="menu_evaluation_main"
+              name="Đánh giá"
+              parent="menu_evaluation_root"
+              sequence="10"/>
+
+    <menuitem id="menu_monthly_evaluation"
+              name="Phiếu đánh giá tháng (Mẫu 01)"
+              parent="menu_evaluation_main"
+              action="action_monthly_evaluation"
+              sequence="10"/>
+
+    <menuitem id="menu_quarterly_summary"
+              name="Tổng hợp quý"
+              parent="menu_evaluation_main"
+              action="action_quarterly_summary"
+              sequence="20"/>
+
+    <menuitem id="menu_yearly_classification"
+              name="Xếp loại năm (Mẫu 02)"
+              parent="menu_evaluation_main"
+              action="action_yearly_classification"
+              sequence="30"/>
+
+    <!-- Phê duyệt -->
+    <menuitem id="menu_approval"
+              name="Phê duyệt"
+              parent="menu_evaluation_root"
+              groups="bv_danh_gia.group_evaluation_dept_manager"
+              sequence="20"/>
+
+    <menuitem id="menu_approval_dept"
+              name="Duyệt phiếu (Trưởng khoa)"
+              parent="menu_approval"
+              action="action_monthly_evaluation_dept"
+              sequence="10"/>
+
+    <menuitem id="menu_approval_hr"
+              name="Xét duyệt (TCCB)"
+              parent="menu_approval"
+              action="action_monthly_evaluation_hr"
+              groups="bv_danh_gia.group_evaluation_hr"
+              sequence="20"/>
+
+    <!-- Báo cáo -->
+    <menuitem id="menu_reports"
+              name="Báo cáo"
+              parent="menu_evaluation_root"
+              groups="bv_danh_gia.group_evaluation_hr"
+              sequence="30"/>
+
+    <!-- Cấu hình -->
+    <menuitem id="menu_config"
+              name="Cấu hình"
+              parent="menu_evaluation_root"
+              groups="bv_danh_gia.group_evaluation_hr"
+              sequence="90"/>
+
+    <menuitem id="menu_config_criteria"
+              name="Tiêu chí đánh giá"
+              parent="menu_config"
+              action="action_evaluation_criteria"
+              sequence="10"/>
+
+    <menuitem id="menu_config_template"
+              name="Biểu mẫu đánh giá"
+              parent="menu_config"
+              action="action_evaluation_template"
+              sequence="20"/>
+
+    <menuitem id="menu_config_settings"
+              name="Cấu hình hệ thống"
+              parent="menu_config"
+              action="action_evaluation_config"
+              sequence="30"/>
+</odoo>

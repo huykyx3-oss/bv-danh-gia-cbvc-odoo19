@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Dashboard Client Action -->
+    <record id="action_evaluation_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard Đánh giá</field>
+        <field name="tag">bv_danh_gia.dashboard</field>
+    </record>
+
+    <!-- Custom Evaluation Form Client Action -->
+    <record id="action_evaluation_form_custom" model="ir.actions.client">
+        <field name="name">Phiếu đánh giá (giao diện mới)</field>
+        <field name="tag">bv_danh_gia.evaluation_form_custom</field>
+    </record>
+</odoo>

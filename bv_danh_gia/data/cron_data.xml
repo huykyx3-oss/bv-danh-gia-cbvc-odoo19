@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Nhắc nhở tự đánh giá hằng tháng: chạy ngày 1 mỗi tháng -->
+    <record id="cron_monthly_evaluation_reminder" model="ir.cron">
+        <field name="name">Nhắc nhở tự đánh giá tháng</field>
+        <field name="model_id" ref="model_bv_monthly_evaluation"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_send_monthly_reminder()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">months</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <!-- Nhắc nhở deadline quý: chạy ngày 5 tháng cuối quý -->
+    <record id="cron_quarterly_deadline_reminder" model="ir.cron">
+        <field name="name">Nhắc nhở deadline tổng hợp quý</field>
+        <field name="model_id" ref="model_bv_monthly_evaluation"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_send_quarterly_deadline_reminder()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">months</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <!-- Kiểm tra tỷ lệ xếp loại: chạy hằng tuần -->
+    <record id="cron_ratio_check" model="ir.cron">
+        <field name="name">Kiểm tra tỷ lệ xếp loại xuất sắc</field>
+        <field name="model_id" ref="model_bv_monthly_evaluation"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_check_ratio_warning()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">weeks</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

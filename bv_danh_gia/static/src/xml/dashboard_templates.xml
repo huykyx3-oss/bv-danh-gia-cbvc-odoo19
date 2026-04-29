@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="bv_danh_gia.Dashboard">
+    <div class="bv-dashboard">
+        <t t-if="state.loading">
+            <div style="text-align:center;padding:60px;">
+                <i class="fa fa-spinner fa-spin fa-3x" style="color:#c9a84c;"/>
+                <p style="margin-top:16px;color:#6b6760;">Đang tải dữ liệu...</p>
+            </div>
+        </t>
+        <t t-else="">
+            <!-- Header -->
+            <div class="bv-dashboard-header">
+                <h1>Dashboard Đánh giá CBVC</h1>
+                <p>
+                    <t t-esc="roleLabel"/>
+                    <t t-if="state.data.employee_name"> · <t t-esc="state.data.employee_name"/></t>
+                </p>
+            </div>
+
+            <!-- Pending approvals for managers/HR -->
+            <t t-if="state.data.role === 'hospital'">
+                <div class="bv-stats-grid" style="margin-bottom:16px;">
+                    <div class="bv-stat-card" style="border-left:4px solid #ffc107;cursor:pointer;" t-on-click="openPendingDept">
+                        <div class="bv-stat-card-label">Chờ trưởng khoa duyệt</div>
+                        <div class="bv-stat-card-value" style="color:#856404;"><t t-esc="state.data.pending_dept"/></div>
+                        <div class="bv-stat-card-sub">phiếu</div>
+                    </div>
+                    <div class="bv-stat-card" style="border-left:4px solid #17a2b8;cursor:pointer;" t-on-click="openPendingHR">
+                        <div class="bv-stat-card-label">Chờ TCCB xét duyệt</div>
+                        <div class="bv-stat-card-value" style="color:#0c5460;"><t t-esc="state.data.pending_hr"/></div>
+                        <div class="bv-stat-card-sub">phiếu</div>
+                    </div>
+                    <div class="bv-stat-card" style="border-left:4px solid #0f2044;">
+                        <div class="bv-stat-card-label">Chờ BGĐ phê duyệt</div>
+                        <div class="bv-stat-card-value" style="color:#0f2044;"><t t-esc="state.data.pending_director"/></div>
+                        <div class="bv-stat-card-sub">phiếu</div>
+                    </div>
+                </div>
+            </t>
+
+            <t t-if="state.data.role === 'department' and state.data.pending_approval > 0">
+                <div class="bv-ratio-alert" style="cursor:pointer;" t-on-click="openPendingDept">
+                    <strong>Có <t t-esc="state.data.pending_approval"/> phiếu</strong> đang chờ duyệt trong khoa/phòng của bạn.
+                </div>
+            </t>
+
+            <!-- Stats cards -->
+            <div class="bv-stats-grid">
+                <div class="bv-stat-card bv-total">
+                    <div class="bv-stat-card-label">Tổng phiếu đã duyệt</div>
+                    <div class="bv-stat-card-value"><t t-esc="state.data.total_evaluations"/></div>
+                    <div class="bv-stat-card-sub">Điểm trung bình: <strong><t t-esc="state.data.avg_score"/></strong></div>
+                </div>
+                <div class="bv-stat-card bv-excellent">
+                    <div class="bv-stat-card-label">Xuất sắc</div>
+                    <div class="bv-stat-card-value"><t t-esc="state.data.excellent_count"/></div>
+                    <div class="bv-stat-card-sub">
+                        Tỷ lệ: <strong><t t-esc="state.data.ratio_excellent_actual"/>%</strong>
+                        (giới hạn <t t-esc="state.data.ratio_excellent"/>%)
+                    </div>
+                </div>
+                <div class="bv-stat-card bv-good">
+                    <div class="bv-stat-card-label">Tốt</div>
+                    <div class="bv-stat-card-value"><t t-esc="state.data.good_count"/></div>
+                </div>
+                <div class="bv-stat-card bv-fair">
+                    <div class="bv-stat-card-label">Hoàn thành</div>
+                    <div class="bv-stat-card-value"><t t-esc="state.data.fair_count"/></div>
+                </div>
+                <div class="bv-stat-card bv-poor">
+                    <div class="bv-stat-card-label">Không hoàn thành</div>
+                    <div class="bv-stat-card-value"><t t-esc="state.data.poor_count"/></div>
+                </div>
+            </div>
+
+            <!-- Ratio warning -->
+            <t t-if="ratioExceeded">
+                <div class="bv-ratio-alert">
+                    <strong>Cảnh báo:</strong> Tỷ lệ xếp loại "Xuất sắc" hiện tại là
+                    <strong><t t-esc="state.data.ratio_excellent_actual"/>%</strong>,
+                    vượt quá giới hạn cho phép
+                    <strong><t t-esc="state.data.ratio_excellent"/>%</strong>.
+                </div>
+            </t>
+            <t t-else="">
+                <t t-if="state.data.total_evaluations > 0">
+                    <div class="bv-ratio-ok">
+                        Tỷ lệ "Xuất sắc": <strong><t t-esc="state.data.ratio_excellent_actual"/>%</strong>
+                        / giới hạn <strong><t t-esc="state.data.ratio_excellent"/>%</strong> — Hợp lệ.
+                    </div>
+                </t>
+            </t>
+
+            <!-- Department breakdown table (hospital-wide view) -->
+            <t t-if="state.data.role === 'hospital' and state.data.department_breakdown and state.data.department_breakdown.length > 0">
+                <div class="bv-dept-table">
+                    <div class="bv-dept-table-header">Thống kê theo Khoa / Phòng</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Khoa / Phòng</th>
+                                <th style="text-align:center">Tổng</th>
+                                <th style="text-align:center">Xuất sắc</th>
+                                <th style="text-align:center">Tốt</th>
+                                <th style="text-align:center">Hoàn thành</th>
+                                <th style="text-align:center">Không HT</th>
+                                <th style="text-align:center">ĐTB</th>
+                                <th style="text-align:center">% XS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.department_breakdown" t-as="dept" t-key="dept.name">
+                                <tr>
+                                    <td><strong><t t-esc="dept.name"/></strong></td>
+                                    <td style="text-align:center"><t t-esc="dept.total"/></td>
+                                    <td style="text-align:center;color:#856404;font-weight:600;"><t t-esc="dept.excellent"/></td>
+                                    <td style="text-align:center;color:#0c5460;"><t t-esc="dept.good"/></td>
+                                    <td style="text-align:center;color:#155724;"><t t-esc="dept.fair"/></td>
+                                    <td style="text-align:center;color:#b03030;"><t t-esc="dept.poor"/></td>
+                                    <td style="text-align:center;font-weight:700;"><t t-esc="dept.avg_score"/></td>
+                                    <td style="text-align:center;">
+                                        <span t-att-style="dept.ratio_excellent > state.data.ratio_excellent ? 'color:#b03030;font-weight:700;' : 'color:#155724;'">
+                                            <t t-esc="dept.ratio_excellent"/>%
+                                        </span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+
+            <!-- Recent evaluations (employee view) -->
+            <t t-if="state.data.role === 'employee' and state.data.recent_evaluations and state.data.recent_evaluations.length > 0">
+                <div class="bv-dept-table">
+                    <div class="bv-dept-table-header">Phiếu đánh giá gần đây</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kỳ đánh giá</th>
+                                <th style="text-align:center">Tổng điểm</th>
+                                <th style="text-align:center">Xếp loại</th>
+                                <th style="text-align:center">Trạng thái</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.recent_evaluations" t-as="ev" t-key="ev.id">
+                                <tr style="cursor:pointer;" t-on-click="() => this.openEvaluation(ev.id)">
+                                    <td><strong><t t-esc="ev.month"/>/<t t-esc="ev.year"/></strong></td>
+                                    <td style="text-align:center;font-weight:700;"><t t-esc="ev.total_score"/></td>
+                                    <td style="text-align:center;"><t t-esc="classificationLabel[ev.classification] || ''"/></td>
+                                    <td style="text-align:center;"><t t-esc="stateLabel[ev.state] || ev.state"/></td>
+                                    <td style="text-align:center;"><i class="fa fa-chevron-right" style="color:#c5c1b8;"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+
+            <!-- Quick actions -->
+            <div class="bv-action-bar" style="margin-top:16px;">
+                <button class="btn btn-primary" t-on-click="openMyEvaluations" style="background:#0f2044;border:none;padding:11px 24px;border-radius:8px;font-weight:600;">
+                    Xem tất cả phiếu đánh giá
+                </button>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

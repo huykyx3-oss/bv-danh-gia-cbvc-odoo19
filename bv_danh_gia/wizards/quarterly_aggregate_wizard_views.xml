@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_quarterly_aggregate_wizard_form" model="ir.ui.view">
+        <field name="name">bv.quarterly.aggregate.wizard.form</field>
+        <field name="model">bv.quarterly.aggregate.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="quarter"/>
+                    <field name="year"/>
+                    <field name="department_id"/>
+                </group>
+                <footer>
+                    <button name="action_aggregate" string="Tổng hợp" type="object" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_quarterly_aggregate_wizard" model="ir.actions.act_window">
+        <field name="name">Tổng hợp đánh giá quý</field>
+        <field name="res_model">bv.quarterly.aggregate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Add to menu -->
+    <menuitem id="menu_quarterly_aggregate"
+              name="Tổng hợp quý"
+              parent="menu_reports"
+              action="action_quarterly_aggregate_wizard"
+              sequence="10"/>
+</odoo>

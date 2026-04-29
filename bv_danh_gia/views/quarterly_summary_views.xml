@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View -->
+    <record id="view_quarterly_summary_form" model="ir.ui.view">
+        <field name="name">bv.quarterly.summary.form</field>
+        <field name="model">bv.quarterly.summary</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_dept_approve" string="Trưởng khoa duyệt"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"
+                            groups="bv_danh_gia.group_evaluation_dept_manager"/>
+                    <button name="action_hr_review" string="TCCB xét duyệt"
+                            type="object" class="btn-primary"
+                            invisible="state != 'dept_approved'"
+                            groups="bv_danh_gia.group_evaluation_hr"/>
+                    <button name="action_approve" string="BGĐ phê duyệt"
+                            type="object" class="btn-primary"
+                            invisible="state != 'hr_reviewed'"
+                            groups="bv_danh_gia.group_evaluation_director"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,dept_approved,hr_reviewed,approved"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                            <field name="job_id"/>
+                        </group>
+                        <group>
+                            <field name="quarter" readonly="state != 'draft'"/>
+                            <field name="year" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <group string="Điểm theo tháng">
+                        <group>
+                            <field name="month1_score"/>
+                            <field name="month2_score"/>
+                            <field name="month3_score"/>
+                        </group>
+                        <group>
+                            <field name="average_score" readonly="1" decoration-bf="1"/>
+                            <field name="classification" readonly="1" decoration-bf="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_quarterly_summary_tree" model="ir.ui.view">
+        <field name="name">bv.quarterly.summary.tree</field>
+        <field name="model">bv.quarterly.summary</field>
+        <field name="arch" type="xml">
+            <list decoration-success="classification == 'excellent'"
+                  decoration-info="classification == 'good'"
+                  decoration-warning="classification == 'fair'"
+                  decoration-danger="classification == 'poor'">
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="quarter"/>
+                <field name="year"/>
+                <field name="month1_score"/>
+                <field name="month2_score"/>
+                <field name="month3_score"/>
+                <field name="average_score" decoration-bf="1"/>
+                <field name="classification"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_quarterly_summary_search" model="ir.ui.view">
+        <field name="name">bv.quarterly.summary.search</field>
+        <field name="model">bv.quarterly.summary</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <group expand="0" string="Nhóm theo">
+                    <filter name="group_department" string="Khoa/Phòng"
+                            context="{'group_by': 'department_id'}"/>
+                    <filter name="group_quarter" string="Quý"
+                            context="{'group_by': 'quarter'}"/>
+                    <filter name="group_classification" string="Xếp loại"
+                            context="{'group_by': 'classification'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_quarterly_summary" model="ir.actions.act_window">
+        <field name="name">Tổng hợp đánh giá quý</field>
+        <field name="res_model">bv.quarterly.summary</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chưa có bản tổng hợp quý
+            </p>
+            <p>Sử dụng wizard "Tổng hợp quý" để tạo tự động từ phiếu đánh giá tháng.</p>
+        </field>
+    </record>
+</odoo>

@@ -110,14 +110,6 @@
             <search>
                 <field name="name"/>
                 <field name="code"/>
-                <filter name="active" string="Đang sử dụng" domain="[('active', '=', True)]"/>
-                <filter name="archived" string="Đã lưu trữ" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Nhóm theo">
-                    <filter name="group_type" string="Loại biểu mẫu"
-                            context="{'group_by': 'template_type'}"/>
-                    <filter name="group_apply" string="Đối tượng"
-                            context="{'group_by': 'apply_to'}"/>
-                </group>
             </search>
         </field>
     </record>
@@ -127,7 +119,6 @@
         <field name="name">Biểu mẫu đánh giá</field>
         <field name="res_model">bv.evaluation.template</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_active': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Tạo biểu mẫu đánh giá mới

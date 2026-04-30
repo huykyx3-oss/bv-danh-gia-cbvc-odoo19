@@ -30,9 +30,4 @@
         <field name="target">new</field>
     </record>
 
-    <menuitem id="menu_ratio_check"
-              name="Kiểm tra tỷ lệ xếp loại"
-              parent="menu_reports"
-              action="action_ratio_check_wizard"
-              sequence="30"/>
 </odoo>

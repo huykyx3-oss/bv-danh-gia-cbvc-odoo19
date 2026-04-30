@@ -71,9 +71,9 @@
                                     <field name="criteria_id" readonly="1"/>
                                     <field name="max_score" readonly="1"/>
                                     <field name="self_score"
-                                           readonly="state != 'draft'"/>
+                                           readonly="parent.state != 'draft'"/>
                                     <field name="dept_score"
-                                           readonly="state != 'submitted'"
+                                           readonly="parent.state != 'submitted'"
                                            column_invisible="parent.state == 'draft'"/>
                                     <field name="final_score" readonly="1"
                                            decoration-bf="1"/>
@@ -198,30 +198,6 @@
             <search>
                 <field name="employee_id"/>
                 <field name="department_id"/>
-                <filter name="my_evaluations" string="Phiếu của tôi"
-                        domain="[('employee_id.user_id', '=', uid)]"/>
-                <separator/>
-                <filter name="draft" string="Nháp" domain="[('state', '=', 'draft')]"/>
-                <filter name="submitted" string="Đã gửi" domain="[('state', '=', 'submitted')]"/>
-                <filter name="approved" string="Đã duyệt" domain="[('state', '=', 'approved')]"/>
-                <separator/>
-                <filter name="excellent" string="Xuất sắc" domain="[('classification', '=', 'excellent')]"/>
-                <filter name="good" string="Tốt" domain="[('classification', '=', 'good')]"/>
-                <filter name="fair" string="Hoàn thành" domain="[('classification', '=', 'fair')]"/>
-                <filter name="poor" string="Không HT" domain="[('classification', '=', 'poor')]"/>
-                <separator/>
-                <group expand="0" string="Nhóm theo">
-                    <filter name="group_department" string="Khoa/Phòng"
-                            context="{'group_by': 'department_id'}"/>
-                    <filter name="group_month" string="Tháng"
-                            context="{'group_by': 'month'}"/>
-                    <filter name="group_quarter" string="Quý"
-                            context="{'group_by': 'quarter'}"/>
-                    <filter name="group_state" string="Trạng thái"
-                            context="{'group_by': 'state'}"/>
-                    <filter name="group_classification" string="Xếp loại"
-                            context="{'group_by': 'classification'}"/>
-                </group>
             </search>
         </field>
     </record>

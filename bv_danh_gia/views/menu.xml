@@ -64,6 +64,24 @@
               groups="bv_danh_gia.group_evaluation_hr"
               sequence="30"/>
 
+    <menuitem id="menu_quarterly_aggregate"
+              name="Tổng hợp quý"
+              parent="menu_reports"
+              action="action_quarterly_aggregate_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_yearly_aggregate"
+              name="Tổng hợp năm"
+              parent="menu_reports"
+              action="action_yearly_aggregate_wizard"
+              sequence="20"/>
+
+    <menuitem id="menu_ratio_check"
+              name="Kiểm tra tỷ lệ xếp loại"
+              parent="menu_reports"
+              action="action_ratio_check_wizard"
+              sequence="30"/>
+
     <!-- Cấu hình -->
     <menuitem id="menu_config"
               name="Cấu hình"

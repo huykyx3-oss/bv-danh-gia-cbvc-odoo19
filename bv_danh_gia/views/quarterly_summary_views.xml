@@ -82,14 +82,6 @@
             <search>
                 <field name="employee_id"/>
                 <field name="department_id"/>
-                <group expand="0" string="Nhóm theo">
-                    <filter name="group_department" string="Khoa/Phòng"
-                            context="{'group_by': 'department_id'}"/>
-                    <filter name="group_quarter" string="Quý"
-                            context="{'group_by': 'quarter'}"/>
-                    <filter name="group_classification" string="Xếp loại"
-                            context="{'group_by': 'classification'}"/>
-                </group>
             </search>
         </field>
     </record>

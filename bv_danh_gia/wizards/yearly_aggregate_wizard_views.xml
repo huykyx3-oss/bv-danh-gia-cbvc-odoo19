@@ -24,9 +24,4 @@
         <field name="target">new</field>
     </record>
 
-    <menuitem id="menu_yearly_aggregate"
-              name="Tổng hợp năm"
-              parent="menu_reports"
-              action="action_yearly_aggregate_wizard"
-              sequence="20"/>
 </odoo>

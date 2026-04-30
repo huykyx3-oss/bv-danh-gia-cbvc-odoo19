@@ -8,7 +8,6 @@
         <field name="code">model._cron_send_monthly_reminder()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">months</field>
-        <field name="numbercall">-1</field>
         <field name="active" eval="True"/>
     </record>
 
@@ -20,7 +19,6 @@
         <field name="code">model._cron_send_quarterly_deadline_reminder()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">months</field>
-        <field name="numbercall">-1</field>
         <field name="active" eval="True"/>
     </record>
 
@@ -32,7 +30,6 @@
         <field name="code">model._cron_check_ratio_warning()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">weeks</field>
-        <field name="numbercall">-1</field>
         <field name="active" eval="True"/>
     </record>
 </odoo>

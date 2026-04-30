@@ -25,10 +25,4 @@
         <field name="target">new</field>
     </record>
 
-    <!-- Add to menu -->
-    <menuitem id="menu_quarterly_aggregate"
-              name="Tổng hợp quý"
-              parent="menu_reports"
-              action="action_quarterly_aggregate_wizard"
-              sequence="10"/>
 </odoo>

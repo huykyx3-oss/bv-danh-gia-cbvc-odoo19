@@ -46,18 +46,33 @@
                             <field name="display_name" readonly="1"/>
                         </h1>
                     </div>
-                    <group>
-                        <group string="Thông tin cá nhân">
+
+                    <!-- BƯỚC 1: Chọn biểu mẫu -->
+                    <div class="alert alert-info" role="alert" invisible="state != 'draft'">
+                        <strong>Hướng dẫn:</strong>
+                        Chọn <strong>Biểu mẫu đánh giá</strong> do Phòng TCCB ban hành → các tiêu chí sẽ tự động hiện ra.
+                        Sau đó điền tháng/năm và chấm điểm từng tiêu chí.
+                    </div>
+
+                    <group string="1. Chọn biểu mẫu đánh giá">
+                        <field name="template_id"
+                               readonly="state != 'draft'"
+                               options="{'no_create': True, 'no_edit': True}"
+                               domain="[('active', '=', True), ('template_type', '=', 'monthly')]"
+                               placeholder="-- Chọn biểu mẫu do TCCB ban hành --"/>
+                    </group>
+
+                    <group string="2. Thông tin kỳ đánh giá">
+                        <group>
                             <field name="employee_id" readonly="state != 'draft'"/>
-                            <field name="department_id"/>
-                            <field name="job_id"/>
+                            <field name="department_id" readonly="1"/>
+                            <field name="job_id" readonly="1"/>
                             <field name="is_manager"/>
-                            <field name="template_id" readonly="state != 'draft'"/>
                         </group>
-                        <group string="Kỳ đánh giá">
+                        <group>
                             <field name="month" readonly="state != 'draft'"/>
                             <field name="year" readonly="state != 'draft'"/>
-                            <field name="quarter"/>
+                            <field name="quarter" readonly="1"/>
                         </group>
                     </group>
 

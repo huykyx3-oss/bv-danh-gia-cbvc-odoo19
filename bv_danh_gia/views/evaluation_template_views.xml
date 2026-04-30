@@ -124,8 +124,8 @@
                 Tạo biểu mẫu đánh giá mới
             </p>
             <p>
-                Phòng TCCB có thể tạo, chỉnh sửa, sao chép hoặc lưu trữ các biểu mẫu đánh giá.
-                Mỗi biểu mẫu chứa danh sách tiêu chí, điểm tối đa, và quy trình phê duyệt riêng.
+                Phòng TCCB tạo biểu mẫu với danh sách tiêu chí, điểm tối đa và quy trình duyệt.
+                Sau khi lưu, hệ thống <strong>tự đồng bộ tiêu chí</strong> — nhân viên có thể chọn biểu mẫu này ngay.
             </p>
         </field>
     </record>

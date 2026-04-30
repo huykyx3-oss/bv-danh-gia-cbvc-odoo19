@@ -158,16 +158,48 @@ class MonthlyEvaluation(models.Model):
             else:
                 rec.classification = 'poor'
 
-    @api.onchange('employee_id', 'month', 'year', 'template_id')
+    @api.onchange('template_id')
+    def _onchange_template_id(self):
+        """When employee selects a template, load its criteria immediately."""
+        # Always clear existing lines when template changes
+        self.criteria_line_ids = [(5, 0, 0)]
+        if not self.template_id:
+            return
+
+        tmpl = self.template_id
+        # Ensure criteria are synced to master
+        if tmpl.criteria_ids and not all(
+            tc.synced_criteria_id for tc in tmpl.criteria_ids.filtered(lambda c: c.parent_line_id)
+        ):
+            tmpl._sync_criteria_to_master()
+
+        # Build lines from synced leaf criteria (those with parent = a group)
+        leaf_tcs = tmpl.criteria_ids.filtered(
+            lambda c: c.parent_line_id and c.synced_criteria_id
+        ).sorted('sequence')
+
+        if leaf_tcs:
+            self.criteria_line_ids = [
+                (0, 0, {'criteria_id': tc.synced_criteria_id.id})
+                for tc in leaf_tcs
+            ]
+        else:
+            # Fallback: template has no parent grouping, load all synced criteria
+            all_tcs = tmpl.criteria_ids.filtered(
+                lambda c: c.synced_criteria_id
+            ).sorted('sequence')
+            self.criteria_line_ids = [
+                (0, 0, {'criteria_id': tc.synced_criteria_id.id})
+                for tc in all_tcs
+            ]
+
+    @api.onchange('employee_id', 'month', 'year')
     def _onchange_populate_criteria(self):
-        """Auto-populate criteria lines when key fields are set (before save)."""
+        """Fallback: when no template selected, populate from global master criteria."""
         if not self.employee_id or not self.month or not self.year:
             return
-        if self.criteria_line_ids:
-            return  # Already populated, don't overwrite
-        if self.template_id:
-            return  # Template-based criteria handled at create() time
-        # Use global master criteria (no DB write needed here)
+        if self.criteria_line_ids or self.template_id:
+            return  # Already populated or will be handled by template onchange
         criteria = self.env['bv.evaluation.criteria'].search([
             ('category', '=', 'general'),
             ('is_parent', '=', False),

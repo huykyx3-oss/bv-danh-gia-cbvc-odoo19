@@ -73,33 +73,84 @@ class EvaluationTemplate(models.Model):
             'target': 'current',
         }
 
-    def action_apply_to_evaluations(self):
-        """Apply this template's criteria to new evaluations."""
-        self.ensure_one()
+    def _sync_criteria_to_master(self):
+        """Sync all template criteria to bv.evaluation.criteria master table.
+        Runs automatically on save so employees can immediately use the template."""
         Criteria = self.env['bv.evaluation.criteria']
-        for tc in self.criteria_ids.filtered(lambda c: not c.synced_criteria_id):
-            parent = False
-            if tc.parent_line_id and tc.parent_line_id.synced_criteria_id:
-                parent = tc.parent_line_id.synced_criteria_id.id
+        parent_map = {}  # tc.id -> criteria.id
 
-            new_criteria = Criteria.create({
-                'name': tc.name,
-                'code': tc.code,
-                'category': 'general',
-                'max_score': tc.max_score,
-                'sequence': tc.sequence,
-                'parent_id': parent,
-                'note': tc.note,
-            })
-            tc.synced_criteria_id = new_criteria.id
+        # Pass 1: parent groups
+        for tc in self.criteria_ids.filtered(lambda c: not c.parent_line_id).sorted('sequence'):
+            if tc.synced_criteria_id:
+                # Update existing
+                tc.synced_criteria_id.write({
+                    'name': tc.name, 'code': tc.code or '',
+                    'max_score': tc.max_score, 'sequence': tc.sequence,
+                })
+                parent_map[tc.id] = tc.synced_criteria_id.id
+            else:
+                # Find existing by name or create
+                existing = Criteria.search([
+                    ('name', '=', tc.name), ('category', '=', 'general'),
+                    ('parent_id', '=', False),
+                ], limit=1)
+                if not existing:
+                    existing = Criteria.create({
+                        'name': tc.name, 'code': tc.code or '',
+                        'category': 'general', 'max_score': tc.max_score,
+                        'sequence': tc.sequence,
+                    })
+                tc.synced_criteria_id = existing.id
+                parent_map[tc.id] = existing.id
 
+        # Pass 2: leaf criteria
+        for tc in self.criteria_ids.filtered(lambda c: c.parent_line_id).sorted('sequence'):
+            parent_id = parent_map.get(tc.parent_line_id.id)
+            if tc.synced_criteria_id:
+                tc.synced_criteria_id.write({
+                    'name': tc.name, 'code': tc.code or '',
+                    'max_score': tc.max_score, 'sequence': tc.sequence,
+                    'parent_id': parent_id, 'note': tc.note or '',
+                })
+            else:
+                existing = Criteria.search([
+                    ('name', '=', tc.name), ('category', '=', 'general'),
+                    ('parent_id', '=', parent_id),
+                ], limit=1)
+                if not existing:
+                    existing = Criteria.create({
+                        'name': tc.name, 'code': tc.code or '',
+                        'category': 'general', 'max_score': tc.max_score,
+                        'sequence': tc.sequence, 'parent_id': parent_id,
+                        'note': tc.note or '',
+                    })
+                tc.synced_criteria_id = existing.id
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            if rec.criteria_ids:
+                rec._sync_criteria_to_master()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if 'criteria_ids' in vals:
+            for rec in self:
+                rec._sync_criteria_to_master()
+        return result
+
+    def action_apply_to_evaluations(self):
+        """Manual sync button: sync criteria and return notification."""
+        for rec in self:
+            rec._sync_criteria_to_master()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Đồng bộ thành công',
-                'message': f'Đã đồng bộ {len(self.criteria_ids)} tiêu chí từ biểu mẫu "{self.name}" '
-                           'vào hệ thống tiêu chí đánh giá.',
+                'message': f'Đã đồng bộ tiêu chí từ biểu mẫu "{self.name}" vào hệ thống.',
                 'type': 'success',
                 'sticky': False,
             },

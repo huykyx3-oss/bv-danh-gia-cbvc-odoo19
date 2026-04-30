@@ -29,6 +29,37 @@ class ExportDocxController(http.Controller):
         style = doc.styles['Normal']
         style.font.name = 'Times New Roman'
         style.font.size = Pt(13)
+        for font_name in ('ascii', 'hAnsi', 'eastAsia', 'cs'):
+            setattr(style.font, font_name, 'Times New Roman')
+
+        def _set_cell_text(cell, text, align=WD_ALIGN_PARAGRAPH.LEFT, bold=False, italic=False):
+            cell.text = ''
+            p = cell.paragraphs[0]
+            p.alignment = align
+            run = p.add_run(text or '')
+            run.bold = bold
+            run.italic = italic
+            run.font.name = 'Times New Roman'
+            run.font.size = Pt(13)
+            return p
+
+        def _add_paragraph(text='', align=WD_ALIGN_PARAGRAPH.LEFT, bold=False, italic=False):
+            p = doc.add_paragraph()
+            p.alignment = align
+            run = p.add_run(text or '')
+            run.bold = bold
+            run.italic = italic
+            run.font.name = 'Times New Roman'
+            run.font.size = Pt(13)
+            return p
+
+        def _fmt_score(value):
+            if value is None:
+                return ''
+            num = float(value)
+            if num.is_integer():
+                return str(int(num))
+            return f'{num:.2f}'.rstrip('0').rstrip('.')
 
         # --- Header ---
         table_header = doc.add_table(rows=1, cols=2)
@@ -36,31 +67,17 @@ class ExportDocxController(http.Controller):
         cell_left = table_header.cell(0, 0)
         cell_right = table_header.cell(0, 1)
 
-        p_left = cell_left.paragraphs[0]
-        p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p_left.add_run('TÊN CƠ QUAN, TỔ CHỨC, ĐƠN VỊ')
-        run.bold = True
-        run.font.size = Pt(12)
-        p_left.add_run(f'\n{evaluation.department_id.name or ""}').font.size = Pt(12)
+        _set_cell_text(cell_left, 'TÊN CƠ QUAN,\nTỔ CHỨC, ĐƠN VỊ', WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        p_right = _set_cell_text(
+            cell_right,
+            'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc',
+            WD_ALIGN_PARAGRAPH.CENTER,
+            bold=True,
+        )
+        p_right.add_run('\n──────────────').font.size = Pt(13)
 
-        p_right = cell_right.paragraphs[0]
-        p_right.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p_right.add_run('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM')
-        run.bold = True
-        run.font.size = Pt(12)
-        run2 = p_right.add_run('\nĐộc lập - Tự do - Hạnh phúc')
-        run2.bold = True
-        run2.font.size = Pt(12)
-        p_right.add_run('\n──────────────').font.size = Pt(12)
-
-        doc.add_paragraph()
-
-        # --- Title ---
-        title = doc.add_paragraph()
-        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = title.add_run('PHIẾU THEO DÕI, ĐÁNH GIÁ CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC')
-        run.bold = True
-        run.font.size = Pt(14)
+        _add_paragraph('Mẫu số 01', WD_ALIGN_PARAGRAPH.RIGHT, bold=True)
+        _add_paragraph('PHIẾU THEO DÕI, ĐÁNH GIÁ CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC', WD_ALIGN_PARAGRAPH.CENTER, bold=True)
 
         month_labels = dict([
             ('1', 'Tháng 1'), ('2', 'Tháng 2'), ('3', 'Tháng 3'),
@@ -68,122 +85,96 @@ class ExportDocxController(http.Controller):
             ('7', 'Tháng 7'), ('8', 'Tháng 8'), ('9', 'Tháng 9'),
             ('10', 'Tháng 10'), ('11', 'Tháng 11'), ('12', 'Tháng 12'),
         ])
-        subtitle = doc.add_paragraph()
-        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        subtitle.add_run(
-            f'(Kỳ theo dõi, đánh giá: {month_labels.get(evaluation.month, "")} '
-            f'năm {evaluation.year})')
+        _add_paragraph(
+            f'(Kỳ theo dõi, đánh giá: {month_labels.get(evaluation.month, "")} năm {evaluation.year})',
+            WD_ALIGN_PARAGRAPH.CENTER,
+            italic=True,
+        )
 
         # --- Personal info ---
-        doc.add_paragraph(f'Họ và tên: {evaluation.employee_id.name or ""}')
-        doc.add_paragraph(f'Chức vụ, chức danh: {evaluation.job_id.name or ""}')
-        doc.add_paragraph(f'Đơn vị công tác: {evaluation.department_id.name or ""}')
+        _add_paragraph(f'Họ và tên: {evaluation.employee_id.name or ""}')
+        _add_paragraph(f'Chức vụ, chức danh: {evaluation.job_id.name or ""}')
+        _add_paragraph(f'Đơn vị công tác: {evaluation.department_id.name or ""}')
 
         # --- I. Tiêu chí chung ---
-        h1 = doc.add_paragraph()
-        run = h1.add_run('I. KẾT QUẢ THEO DÕI, ĐÁNH GIÁ THEO TIÊU CHÍ CHUNG')
-        run.bold = True
+        _add_paragraph('I. KẾT QUẢ THEO DÕI, ĐÁNH GIÁ THEO TIÊU CHÍ CHUNG', bold=True)
 
-        table = doc.add_table(rows=1, cols=6)
+        table = doc.add_table(rows=2, cols=4)
         table.style = 'Table Grid'
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-        headers = ['TT', 'Tiêu chí chấm điểm', 'Điểm tối đa',
-                   'Điểm tự chấm', 'Điểm TK chấm', 'Điểm cuối']
+        headers = ['TT', 'Tiêu chí chấm điểm', 'Điểm tối đa', 'Điểm tự chấm']
+        sub_headers = ['(1)', '(2)', '(3)', '(4)']
         for i, h in enumerate(headers):
-            cell = table.rows[0].cells[i]
-            cell.text = h
-            for p in cell.paragraphs:
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                for r in p.runs:
-                    r.bold = True
-                    r.font.size = Pt(11)
+            _set_cell_text(table.rows[0].cells[i], h, WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+            _set_cell_text(table.rows[1].cells[i], sub_headers[i], WD_ALIGN_PARAGRAPH.CENTER, italic=True)
+
+        general_score_max = evaluation.general_score_max or 30.0
+        task_score_max = evaluation.task_score_max or 70.0
 
         for idx, line in enumerate(evaluation.criteria_line_ids, 1):
             row = table.add_row()
-            row.cells[0].text = str(idx)
-            row.cells[1].text = line.criteria_id.name or ''
-            row.cells[2].text = str(line.max_score)
-            row.cells[3].text = str(line.self_score)
-            row.cells[4].text = str(line.dept_score)
-            row.cells[5].text = str(line.final_score)
-            for i in [0, 2, 3, 4, 5]:
-                for p in row.cells[i].paragraphs:
-                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _set_cell_text(row.cells[0], str(idx), WD_ALIGN_PARAGRAPH.CENTER)
+            _set_cell_text(row.cells[1], line.criteria_id.name or '', WD_ALIGN_PARAGRAPH.LEFT)
+            _set_cell_text(row.cells[2], _fmt_score(line.max_score), WD_ALIGN_PARAGRAPH.CENTER)
+            _set_cell_text(row.cells[3], _fmt_score(line.self_score), WD_ALIGN_PARAGRAPH.CENTER)
 
         total_row = table.add_row()
-        total_row.cells[0].text = ''
-        p = total_row.cells[1].paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        run = p.add_run('Tổng cộng')
-        run.bold = True
-        total_row.cells[2].text = '30'
-        total_row.cells[3].text = str(sum(evaluation.criteria_line_ids.mapped('self_score')))
-        total_row.cells[4].text = str(sum(evaluation.criteria_line_ids.mapped('dept_score')))
-        total_row.cells[5].text = str(evaluation.general_score)
-        for i in [2, 3, 4, 5]:
-            for p in total_row.cells[i].paragraphs:
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                for r in p.runs:
-                    r.bold = True
+        total_row.cells[0].merge(total_row.cells[1])
+        _set_cell_text(total_row.cells[0], 'Tổng cộng', WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        _set_cell_text(total_row.cells[2], _fmt_score(general_score_max), WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        _set_cell_text(total_row.cells[3], _fmt_score(evaluation.general_score), WD_ALIGN_PARAGRAPH.CENTER, bold=True)
 
         # --- II. Tổng hợp ---
-        doc.add_paragraph()
-        h2 = doc.add_paragraph()
-        run = h2.add_run('II. TỔNG HỢP KẾT QUẢ THEO DÕI, ĐÁNH GIÁ')
-        run.bold = True
-
-        doc.add_paragraph(f'1. Điểm tiêu chí chung: {evaluation.general_score}')
-        doc.add_paragraph('2. Điểm tiêu chí kết quả thực hiện nhiệm vụ:')
-        doc.add_paragraph(f'   - a: % Số lượng: {evaluation.pct_quantity}%')
-        doc.add_paragraph(f'   - b: % Chất lượng: {evaluation.pct_quality}%')
-        doc.add_paragraph(f'   - c: % Tiến độ: {evaluation.pct_progress}%')
+        _add_paragraph('II. TỔNG HỢP KẾT QUẢ THEO DÕI, ĐÁNH GIÁ CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC', bold=True)
+        _add_paragraph(f'1. Điểm tiêu chí chung: {_fmt_score(evaluation.general_score)} điểm')
+        _add_paragraph('2. Điểm tiêu chí kết quả thực hiện nhiệm vụ:')
+        _add_paragraph(f'- a là điểm tỷ lệ phần trăm (%) về số lượng kết quả thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_quantity)}%')
+        _add_paragraph(f'- b là điểm tỷ lệ phần trăm (%) về chất lượng kết quả thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_quality)}%')
+        _add_paragraph(f'- c là điểm tỷ lệ phần trăm (%) về tiến độ kết quả thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_progress)}%')
         if evaluation.is_manager:
-            doc.add_paragraph(f'   - d: % Kết quả lĩnh vực: {evaluation.pct_field_result}%')
-            doc.add_paragraph(f'   - đ: % Tổ chức triển khai: {evaluation.pct_organization}%')
-            doc.add_paragraph(f'   - e: % Đoàn kết: {evaluation.pct_team_cohesion}%')
+            _add_paragraph(
+                f'- d là điểm tỷ lệ phần trăm (%) về kết quả hoạt động của lĩnh vực được giao lãnh đạo, quản lý, phụ trách: {_fmt_score(evaluation.pct_field_result)}%'
+            )
+            _add_paragraph(
+                f'- đ là điểm tỷ lệ phần trăm (%) về khả năng tổ chức triển khai thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_organization)}%'
+            )
+            _add_paragraph(
+                f'- e là điểm tỷ lệ phần trăm (%) về năng lực tập hợp, đoàn kết công chức thuộc phạm vi quản lý: {_fmt_score(evaluation.pct_team_cohesion)}%'
+            )
 
-        doc.add_paragraph(f'   Điểm KQTHNV: {evaluation.task_score:.2f} điểm')
-
-        p_total = doc.add_paragraph()
-        run = p_total.add_run(f'3. Tổng điểm: {evaluation.total_score:.2f} điểm')
-        run.bold = True
-
-        doc.add_paragraph(f'4. Ưu điểm: {evaluation.strengths or ""}')
-        doc.add_paragraph(f'5. Hạn chế, khuyết điểm: {evaluation.weaknesses or ""}')
-        doc.add_paragraph(
-            f'6. Ý kiến nhận xét của cấp có thẩm quyền: '
-            f'{evaluation.authority_comment or ""}')
+        role_label = 'giữ chức vụ' if evaluation.is_manager else 'không giữ chức vụ'
+        _add_paragraph(
+            f'Điểm tiêu chí kết quả thực hiện nhiệm vụ (đối với CBCCVC {role_label}): {_fmt_score(evaluation.task_score)} / {_fmt_score(task_score_max)} điểm'
+        )
+        _add_paragraph(
+            f'3. Tổng điểm theo dõi, đánh giá cán bộ, công chức, viên chức: {_fmt_score(evaluation.total_score)} điểm',
+            bold=True,
+        )
+        _add_paragraph(f'4. Ưu điểm: {evaluation.strengths or ""}')
+        _add_paragraph(f'5. Hạn chế, khuyết điểm: {evaluation.weaknesses or ""}')
+        _add_paragraph(f'6. Ý kiến nhận xét của cấp có thẩm quyền theo dõi, đánh giá: {evaluation.authority_comment or ""}')
 
         # --- Signatures ---
-        doc.add_paragraph()
-        sig_table = doc.add_table(rows=4, cols=2)
+        sig_table = doc.add_table(rows=1, cols=2)
         sig_table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-        for col_idx, (title_text, subtitle_text) in enumerate([
+        for col_idx, title_text in enumerate([
             ('CBCCVC TỰ ĐÁNH GIÁ', '(Ký tên, ghi rõ họ tên)'),
             ('CẤP CÓ THẨM QUYỀN\nTHEO DÕI, ĐÁNH GIÁ', '(Ký tên, ghi rõ họ tên)'),
         ]):
-            cell_date = sig_table.cell(0, col_idx)
-            cell_date.text = '......, ngày .... tháng .... năm ....'
-            for p in cell_date.paragraphs:
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-            cell_title = sig_table.cell(1, col_idx)
-            p = cell_title.paragraphs[0]
+            title, subtitle = title_text
+            cell = sig_table.cell(0, col_idx)
+            cell.text = ''
+            p = cell.paragraphs[0]
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            run = p.add_run(title_text)
-            run.bold = True
-
-            cell_sub = sig_table.cell(2, col_idx)
-            p = cell_sub.paragraphs[0]
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.add_run(subtitle_text).italic = True
-
-        cell_name = sig_table.cell(3, 0)
-        p = cell_name.paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p.add_run(f'\n\n\n{evaluation.employee_id.name or ""}')
+            p.add_run('....., ngày....tháng.....năm.....').italic = True
+            p.add_run('\n')
+            p.add_run(title).bold = True
+            p.add_run('\n')
+            p.add_run(subtitle).italic = True
+            if col_idx == 0 and evaluation.employee_id.name:
+                p.add_run(f'\n\n\n{evaluation.employee_id.name}')
 
         # Write to buffer
         buffer = io.BytesIO()

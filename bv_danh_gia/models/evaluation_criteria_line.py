@@ -22,6 +22,16 @@ class EvaluationCriteriaLine(models.Model):
     final_score = fields.Float(string='Điểm cuối cùng', compute='_compute_final_score', store=True)
     note = fields.Text(string='Ghi chú')
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # Tránh client gửi NEW với tiêu chí trống ("Add a line") — làm ValidationError khó hiểu
+        vals_list = [
+            vals for vals in vals_list if vals.get('criteria_id')
+            and vals['criteria_id'] not in (False, None)]
+        if not vals_list:
+            return self.browse()
+        return super().create(vals_list)
+
     @api.depends('self_score', 'dept_score', 'evaluation_id.state')
     def _compute_final_score(self):
         for line in self:

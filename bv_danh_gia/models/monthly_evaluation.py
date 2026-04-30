@@ -193,10 +193,19 @@ class MonthlyEvaluation(models.Model):
             return
         tmpl = self.template_id
         lines = tmpl.criteria_ids.filtered(lambda c: c.criteria_id).sorted('sequence')
-        self.criteria_line_ids = [
-            (0, 0, {'criteria_id': tc.criteria_id.id})
-            for tc in lines
-        ]
+        if lines:
+            self.criteria_line_ids = [
+                (0, 0, {'criteria_id': tc.criteria_id.id})
+                for tc in lines
+            ]
+        else:
+            # Biểu mẫu chưa gắn tiêu chí hợp lệ — dùng danh mục toàn hệ thống
+            criteria = self.env['bv.evaluation.criteria'].search([
+                ('category', '=', 'general'),
+                ('is_parent', '=', False),
+                ('active', '=', True),
+            ], order='sequence')
+            self.criteria_line_ids = [(0, 0, {'criteria_id': c.id}) for c in criteria]
 
     @api.onchange('employee_id', 'month', 'year')
     def _onchange_populate_criteria(self):
@@ -214,23 +223,24 @@ class MonthlyEvaluation(models.Model):
 
     def _populate_criteria_lines(self):
         """Auto-populate criteria lines.
-        Priority: template criteria → global master criteria."""
+        Priority: template criteria (chỉ dòng có criteria_id) → danh mục toàn hệ thống."""
         CriteriaLine = self.env['bv.evaluation.criteria.line']
         for rec in self:
-            if rec.template_id and rec.template_id.criteria_ids:
-                # Use template criteria — map parent lines to bv.evaluation.criteria
+            if rec.template_id and rec.template_id.criteria_ids.filtered(lambda c: c.criteria_id):
                 self._populate_from_template(rec, CriteriaLine)
             else:
-                # Fallback: use global master criteria
-                criteria = self.env['bv.evaluation.criteria'].search([
-                    ('category', '=', 'general'),
-                    ('is_parent', '=', False),
-                    ('active', '=', True),
-                ])
-                existing = rec.criteria_line_ids.mapped('criteria_id')
-                for c in criteria:
-                    if c not in existing:
-                        CriteriaLine.create({'evaluation_id': rec.id, 'criteria_id': c.id})
+                self._populate_from_global_master(rec, CriteriaLine)
+
+    def _populate_from_global_master(self, rec, CriteriaLine):
+        criteria = self.env['bv.evaluation.criteria'].search([
+            ('category', '=', 'general'),
+            ('is_parent', '=', False),
+            ('active', '=', True),
+        ])
+        existing = rec.criteria_line_ids.mapped('criteria_id')
+        for c in criteria:
+            if c not in existing:
+                CriteriaLine.create({'evaluation_id': rec.id, 'criteria_id': c.id})
 
     def _populate_from_template(self, rec, CriteriaLine):
         """Create criteria lines from template — each row already references master."""

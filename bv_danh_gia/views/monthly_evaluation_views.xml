@@ -83,10 +83,14 @@
 
                     <notebook>
                         <!-- Tab 1: Tiêu chí chung -->
-                        <page string="I. Tiêu chí chung (30 điểm)">
+                        <page string="I. Tiêu chí chung">
+                            <group>
+                                <field name="general_score_max" readonly="1"
+                                       string="Điểm tối đa phần I (theo biểu mẫu)"/>
+                            </group>
                             <field name="criteria_line_ids"
                                    readonly="state != 'draft'">
-                                <list editable="bottom">
+                                <list editable="bottom" create="false">
                                     <field name="parent_criteria_id" optional="show" readonly="1"/>
                                     <field name="criteria_id" readonly="1" force_save="1"/>
                                     <field name="max_score" readonly="1"/>
@@ -130,7 +134,11 @@
                         </page>
 
                         <!-- Tab 3: Kết quả thực hiện nhiệm vụ -->
-                        <page string="III. Điểm KQTHNV (70 điểm)">
+                        <page string="III. Điểm KQTHNV">
+                            <group>
+                                <field name="task_score_max" readonly="1"
+                                       string="Điểm tối đa phần II / KQTHNV (theo biểu mẫu)"/>
+                            </group>
                             <group>
                                 <group string="Tiêu chí cơ bản (tất cả CBVC)">
                                     <field name="pct_quantity"
@@ -238,7 +246,7 @@
                         <page string="I. Tiêu chí chung — Chấm điểm">
                             <field name="criteria_line_ids"
                                    readonly="state != 'submitted'">
-                                <list editable="bottom">
+                                <list editable="bottom" create="false">
                                     <field name="parent_criteria_id" readonly="1" optional="show"/>
                                     <field name="criteria_id" readonly="1" force_save="1"/>
                                     <field name="max_score" readonly="1"/>

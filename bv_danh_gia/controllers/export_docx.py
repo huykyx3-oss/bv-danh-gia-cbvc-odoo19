@@ -53,12 +53,6 @@ class ExportDocxController(http.Controller):
         run2.font.size = Pt(12)
         p_right.add_run('\n──────────────').font.size = Pt(12)
 
-        for cell in [cell_left, cell_right]:
-            for border_name in ['top', 'bottom', 'left', 'right']:
-                cell._element.xpath('.//w:tcPr', namespaces={
-                    'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
-                })
-
         doc.add_paragraph()
 
         # --- Title ---

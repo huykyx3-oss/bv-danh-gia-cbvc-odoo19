@@ -164,6 +164,132 @@
         </field>
     </record>
 
+    <!-- ========== DEPT MANAGER APPROVAL FORM VIEW ========== -->
+    <record id="view_monthly_evaluation_dept_form" model="ir.ui.view">
+        <field name="name">bv.monthly.evaluation.dept.form</field>
+        <field name="model">bv.monthly.evaluation</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_dept_approve" string="✔ Xác nhận điểm &amp; Duyệt"
+                            type="object" class="btn-primary"
+                            invisible="state != 'submitted'"
+                            groups="bv_danh_gia.group_evaluation_dept_manager"
+                            confirm="Bạn xác nhận đã chấm điểm và đồng ý duyệt phiếu này?"/>
+                    <button name="action_reject" string="Trả lại nhân viên"
+                            type="object" class="btn-danger"
+                            invisible="state != 'submitted'"
+                            groups="bv_danh_gia.group_evaluation_dept_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,dept_approved,hr_reviewed,approved"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'submitted'">
+                        <strong>Hướng dẫn:</strong> Nhập điểm của bạn vào cột
+                        <strong>"Điểm TK/TP chấm"</strong>. Cột "Điểm NV tự chấm" chỉ để tham khảo,
+                        không chỉnh sửa được. Sau khi chấm xong, nhấn
+                        <strong>"Xác nhận điểm &amp; Duyệt"</strong>.
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="display_name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin nhân viên">
+                            <field name="employee_id" readonly="1"/>
+                            <field name="department_id" readonly="1"/>
+                            <field name="job_id" readonly="1"/>
+                            <field name="is_manager" readonly="1"/>
+                        </group>
+                        <group string="Kỳ đánh giá">
+                            <field name="month" readonly="1"/>
+                            <field name="year" readonly="1"/>
+                            <field name="total_score" readonly="1" decoration-bf="1"/>
+                            <field name="classification" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="I. Tiêu chí chung — Chấm điểm">
+                            <field name="criteria_line_ids"
+                                   readonly="state != 'submitted'">
+                                <list editable="bottom">
+                                    <field name="parent_criteria_id" readonly="1" optional="show"/>
+                                    <field name="criteria_id" readonly="1"/>
+                                    <field name="max_score" readonly="1"/>
+                                    <field name="self_score" readonly="1"
+                                           string="NV tự chấm"
+                                           decoration-muted="1"/>
+                                    <field name="dept_score"
+                                           string="TK/TP chấm ✏"
+                                           decoration-bf="parent.state == 'submitted'"
+                                           decoration-success="dept_score >= self_score"
+                                           decoration-warning="dept_score &lt; self_score"/>
+                                    <field name="final_score" readonly="1"
+                                           string="Điểm cuối"
+                                           decoration-bf="1"/>
+                                    <field name="note" optional="show" string="Ghi chú TK"/>
+                                </list>
+                            </field>
+                            <group>
+                                <field name="general_score" readonly="1" decoration-bf="1"/>
+                            </group>
+                        </page>
+
+                        <page string="II. Kết quả nhiệm vụ (% hoàn thành)">
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="state != 'submitted'">
+                                Trưởng khoa/phòng xác nhận các % hoàn thành nhiệm vụ dưới đây.
+                                Chỉnh sửa nếu cần thiết.
+                            </div>
+                            <group>
+                                <group string="Tiêu chí cơ bản">
+                                    <field name="pct_quantity"
+                                           readonly="state != 'submitted'"/>
+                                    <field name="pct_quality"
+                                           readonly="state != 'submitted'"/>
+                                    <field name="pct_progress"
+                                           readonly="state != 'submitted'"/>
+                                </group>
+                                <group string="Tiêu chí lãnh đạo"
+                                       invisible="not is_manager">
+                                    <field name="pct_field_result"
+                                           readonly="state != 'submitted'"/>
+                                    <field name="pct_organization"
+                                           readonly="state != 'submitted'"/>
+                                    <field name="pct_team_cohesion"
+                                           readonly="state != 'submitted'"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="task_score" readonly="1" decoration-bf="1"/>
+                            </group>
+                        </page>
+
+                        <page string="III. Nhận xét &amp; Tổng hợp">
+                            <group>
+                                <field name="total_score" readonly="1" decoration-bf="1"/>
+                                <field name="classification" readonly="1" decoration-bf="1"/>
+                            </group>
+                            <separator string="Nhận xét của trưởng khoa/phòng"/>
+                            <group>
+                                <field name="strengths" readonly="1" string="NV tự nhận xét ưu điểm"/>
+                                <field name="weaknesses" readonly="1" string="NV tự nhận xét hạn chế"/>
+                                <field name="authority_comment"
+                                       string="Nhận xét của Trưởng khoa/Phòng ✏"
+                                       placeholder="Nhận xét, đánh giá của trưởng khoa/phòng..."
+                                       groups="bv_danh_gia.group_evaluation_dept_manager"
+                                       readonly="state != 'submitted'"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
     <!-- ========== LIST VIEW ========== -->
     <record id="view_monthly_evaluation_tree" model="ir.ui.view">
         <field name="name">bv.monthly.evaluation.tree</field>
@@ -219,12 +345,17 @@
         </field>
     </record>
 
-    <!-- Action for department managers -->
+    <!-- Action for department managers — uses dedicated scoring form -->
     <record id="action_monthly_evaluation_dept" model="ir.actions.act_window">
-        <field name="name">Duyệt phiếu đánh giá (Khoa/Phòng)</field>
+        <field name="name">Duyệt &amp; Chấm điểm (Trưởng Khoa/Phòng)</field>
         <field name="res_model">bv.monthly.evaluation</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('state', '=', 'submitted')]</field>
+        <field name="views" eval="[(ref('view_monthly_evaluation_tree'), 'list'), (ref('view_monthly_evaluation_dept_form'), 'form')]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Không có phiếu nào chờ duyệt</p>
+            <p>Các phiếu đánh giá của nhân viên trong khoa/phòng đã gửi sẽ xuất hiện ở đây.</p>
+        </field>
     </record>
 
     <!-- Action for HR -->

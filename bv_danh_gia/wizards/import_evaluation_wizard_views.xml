@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- ─── WIZARD FORM VIEW ─── -->
+  <record id="view_import_evaluation_wizard_form" model="ir.ui.view">
+    <field name="name">bv.import.evaluation.wizard.form</field>
+    <field name="model">bv.import.evaluation.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Nhập phiếu đánh giá từ Excel">
+
+        <!-- ── HEADER: dynamic footer buttons based on state ── -->
+        <footer>
+          <!-- Step 1 buttons -->
+          <button name="action_generate_template"
+                  string="⬇ Tải file mẫu Excel"
+                  type="object"
+                  class="btn-primary"
+                  invisible="state != 'draft'"/>
+          <button name="action_import"
+                  string="⬆ Nhập dữ liệu"
+                  type="object"
+                  class="btn-success"
+                  invisible="state != 'draft' or not file_data"/>
+          <!-- Step 2 buttons (after done) -->
+          <button name="action_open_evaluations"
+                  string="Xem phiếu đã tạo →"
+                  type="object"
+                  class="btn-primary"
+                  invisible="state != 'done'"/>
+          <button special="cancel" string="Đóng" class="btn-secondary"/>
+        </footer>
+
+        <sheet>
+
+          <!-- ── STEP 1 BANNER ── -->
+          <div class="alert alert-info o_form_sheet_title" role="alert"
+               invisible="state != 'draft'">
+            <h4 style="margin:0 0 6px 0; color:#0f2044;">
+              📋 Nhập phiếu đánh giá hàng loạt từ Excel
+            </h4>
+            <ol style="margin:0; padding-left:20px; line-height:1.8;">
+              <li>Chọn <strong>Biểu mẫu</strong>, <strong>Tháng</strong> và <strong>Năm</strong></li>
+              <li>Nhấn <strong>Tải file mẫu Excel</strong> → tải về file đã có cột sẵn</li>
+              <li>Điền thông tin nhân viên và điểm vào file mẫu, lưu lại</li>
+              <li>Upload file vào ô <strong>File Excel đã điền</strong></li>
+              <li>Nhấn <strong>Nhập dữ liệu</strong></li>
+            </ol>
+          </div>
+
+          <!-- ── SUCCESS BANNER ── -->
+          <div class="alert alert-success" role="alert" invisible="state != 'done' or error_count != 0">
+            <strong>✔ Nhập liệu hoàn tất!</strong>
+            Đã tạo <strong><field name="success_count" readonly="1" nolabel="1"/></strong> phiếu đánh giá.
+          </div>
+          <div class="alert alert-warning" role="alert" invisible="state != 'done' or error_count == 0">
+            <strong>⚠ Nhập liệu hoàn tất có lỗi.</strong>
+            Thành công: <strong><field name="success_count" readonly="1" nolabel="1"/></strong> |
+            Lỗi: <strong><field name="error_count" readonly="1" nolabel="1"/></strong> dòng.
+            Xem chi tiết bên dưới.
+          </div>
+
+          <!-- ── SECTION 1: Cấu hình kỳ đánh giá ── -->
+          <group string="1. Cấu hình kỳ đánh giá" invisible="state != 'draft'">
+            <group>
+              <field name="template_id"
+                     options="{'no_create': True, 'no_edit': True}"
+                     placeholder="-- Chọn biểu mẫu do TCCB ban hành --"/>
+              <field name="month"/>
+            </group>
+            <group>
+              <field name="year"/>
+            </group>
+          </group>
+
+          <!-- ── SECTION 2: Tải file mẫu ── -->
+          <group string="2. File mẫu Excel" invisible="state != 'draft'">
+            <div colspan="2" style="padding:8px 0;">
+              <p style="color:#555; margin:0 0 8px 0;">
+                Nhấn nút <strong>Tải file mẫu Excel</strong> (footer bên dưới) để tải về file Excel
+                đã thiết kế sẵn theo biểu mẫu đã chọn. Sau khi tải về, điền thông tin và điểm vào file.
+              </p>
+            </div>
+            <field name="excel_template" filename="excel_template_name"
+                   widget="binary" string="Tải về file mẫu"
+                   invisible="not excel_template"/>
+            <field name="excel_template_name" invisible="1"/>
+          </group>
+
+          <!-- ── SECTION 3: Upload file đã điền ── -->
+          <group string="3. Tải lên file đã điền" invisible="state != 'draft'">
+            <field name="file_data" filename="file_name" widget="binary"
+                   string="File Excel đã điền (*)"/>
+            <field name="file_name" invisible="1"/>
+          </group>
+
+          <!-- ── SECTION 4: Kết quả ── -->
+          <group string="Kết quả nhập liệu" invisible="state != 'done'">
+            <field name="result_html" widget="html" nolabel="1" colspan="2"
+                   style="min-height:200px;"/>
+          </group>
+
+          <!-- Hidden state field -->
+          <field name="state" invisible="1"/>
+
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <!-- ─── ACTION ─── -->
+  <record id="action_import_evaluation_wizard" model="ir.actions.act_window">
+    <field name="name">Nhập phiếu đánh giá từ Excel</field>
+    <field name="res_model">bv.import.evaluation.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+
+</odoo>

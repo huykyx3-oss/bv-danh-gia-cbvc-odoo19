@@ -31,6 +31,7 @@
         'wizards/quarterly_aggregate_wizard_views.xml',
         'wizards/yearly_aggregate_wizard_views.xml',
         'wizards/ratio_check_wizard_views.xml',
+        'wizards/import_evaluation_wizard_views.xml',
         'views/evaluation_criteria_views.xml',
         'views/evaluation_config_views.xml',
         'views/evaluation_template_views.xml',

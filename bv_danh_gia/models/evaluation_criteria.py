@@ -6,6 +6,7 @@ class EvaluationCriteria(models.Model):
     _description = 'Tiêu chí đánh giá'
     _order = 'category, sequence, id'
     _parent_name = 'parent_id'
+    _rec_names_search = ['name', 'code']
 
     name = fields.Char(string='Tên tiêu chí', required=True)
     code = fields.Char(string='Mã tiêu chí')
@@ -25,3 +26,11 @@ class EvaluationCriteria(models.Model):
     def _compute_is_parent(self):
         for rec in self:
             rec.is_parent = bool(rec.child_ids)
+
+    @api.depends('name', 'code')
+    def _compute_display_name(self):
+        for rec in self:
+            if rec.code:
+                rec.display_name = f'[{rec.code}] {rec.name or ""}'
+            else:
+                rec.display_name = rec.name or ''

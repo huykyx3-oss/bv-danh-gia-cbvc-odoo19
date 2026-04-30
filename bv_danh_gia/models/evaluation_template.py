@@ -74,86 +74,48 @@ class EvaluationTemplate(models.Model):
         }
 
     def _sync_criteria_to_master(self):
-        """Sync all template criteria to bv.evaluation.criteria master table.
-        Runs automatically on save so employees can immediately use the template."""
-        Criteria = self.env['bv.evaluation.criteria']
-        parent_map = {}  # tc.id -> criteria.id
+        """No-op kept for compatibility.
 
-        # Pass 1: parent groups
-        for tc in self.criteria_ids.filtered(lambda c: not c.parent_line_id).sorted('sequence'):
-            if tc.synced_criteria_id:
-                # Update existing
-                tc.synced_criteria_id.write({
-                    'name': tc.name, 'code': tc.code or '',
-                    'max_score': tc.max_score, 'sequence': tc.sequence,
-                })
-                parent_map[tc.id] = tc.synced_criteria_id.id
-            else:
-                # Find existing by name or create
-                existing = Criteria.search([
-                    ('name', '=', tc.name), ('category', '=', 'general'),
-                    ('parent_id', '=', False),
-                ], limit=1)
-                if not existing:
-                    existing = Criteria.create({
-                        'name': tc.name, 'code': tc.code or '',
-                        'category': 'general', 'max_score': tc.max_score,
-                        'sequence': tc.sequence,
-                    })
-                tc.synced_criteria_id = existing.id
-                parent_map[tc.id] = existing.id
-
-        # Pass 2: leaf criteria
-        for tc in self.criteria_ids.filtered(lambda c: c.parent_line_id).sorted('sequence'):
-            parent_id = parent_map.get(tc.parent_line_id.id)
-            if tc.synced_criteria_id:
-                tc.synced_criteria_id.write({
-                    'name': tc.name, 'code': tc.code or '',
-                    'max_score': tc.max_score, 'sequence': tc.sequence,
-                    'parent_id': parent_id, 'note': tc.note or '',
-                })
-            else:
-                existing = Criteria.search([
-                    ('name', '=', tc.name), ('category', '=', 'general'),
-                    ('parent_id', '=', parent_id),
-                ], limit=1)
-                if not existing:
-                    existing = Criteria.create({
-                        'name': tc.name, 'code': tc.code or '',
-                        'category': 'general', 'max_score': tc.max_score,
-                        'sequence': tc.sequence, 'parent_id': parent_id,
-                        'note': tc.note or '',
-                    })
-                tc.synced_criteria_id = existing.id
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        for rec in records:
-            if rec.criteria_ids:
-                rec._sync_criteria_to_master()
-        return records
-
-    def write(self, vals):
-        result = super().write(vals)
-        if 'criteria_ids' in vals:
-            for rec in self:
-                rec._sync_criteria_to_master()
-        return result
+        With the new design, template criteria already reference master records
+        (via `criteria_id` Many2one), so syncing is implicit.
+        Override values (max_score per template) live only on the template line.
+        """
+        return True
 
     def action_apply_to_evaluations(self):
-        """Manual sync button: sync criteria and return notification."""
+        """Manual button: gives user feedback that template is ready to use."""
         for rec in self:
-            rec._sync_criteria_to_master()
+            missing = rec.criteria_ids.filtered(lambda c: not c.criteria_id)
+            if missing:
+                raise UserError(
+                    f'Có {len(missing)} dòng chưa chọn tiêu chí từ danh mục. '
+                    'Vui lòng hoàn thiện trước khi áp dụng.'
+                )
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': 'Đồng bộ thành công',
-                'message': f'Đã đồng bộ tiêu chí từ biểu mẫu "{self.name}" vào hệ thống.',
+                'title': 'Sẵn sàng sử dụng',
+                'message': f'Biểu mẫu "{self.name}" đã sẵn sàng — nhân viên có thể chọn ngay.',
                 'type': 'success',
                 'sticky': False,
             },
+        }
+
+    def action_add_criteria_from_master(self):
+        """Quickly add multiple criteria from master catalog."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Thêm tiêu chí từ danh mục',
+            'res_model': 'bv.evaluation.criteria',
+            'view_mode': 'list',
+            'domain': [('is_parent', '=', False), ('active', '=', True)],
+            'context': {
+                'default_template_id': self.id,
+                'tree_view_ref': 'bv_danh_gia.view_evaluation_criteria_tree',
+            },
+            'target': 'new',
         }
 
     def action_archive(self):
@@ -181,42 +143,56 @@ class EvaluationTemplateCriteria(models.Model):
         'bv.evaluation.template', string='Biểu mẫu',
         required=True, ondelete='cascade')
 
-    # Helper: pick from master catalog to auto-fill name/code/score
-    source_criteria_id = fields.Many2one(
+    # ─── Primary picker: chọn 1 lần từ danh mục, mọi thông tin tự điền ───
+    criteria_id = fields.Many2one(
         'bv.evaluation.criteria',
-        string='Chọn từ danh mục',
-        help='Chọn tiêu chí có sẵn trong danh mục để tự động điền tên và điểm tối đa. '
-             'Bạn vẫn có thể chỉnh sửa sau khi chọn.',
-        store=False)
+        string='Tiêu chí (chọn từ danh mục)',
+        domain="[('is_parent', '=', False), ('active', '=', True)]",
+        required=True, ondelete='restrict',
+        help='Gõ tên hoặc mã để tìm tiêu chí có sẵn. '
+             'Bấm "Tạo và chỉnh sửa..." để thêm tiêu chí mới vào danh mục.')
 
-    name = fields.Char(string='Tên tiêu chí', required=True)
-    code = fields.Char(string='Mã')
-    parent_line_id = fields.Many2one(
-        'bv.evaluation.template.criteria', string='Tiêu chí cha (trong biểu mẫu)',
-        domain="[('template_id', '=', template_id), ('id', '!=', id)]",
-        ondelete='cascade',
-        help='Chọn nhóm tiêu chí cha trong cùng biểu mẫu này. '
-             'Để trống nếu đây là tiêu chí gốc/nhóm.')
-    max_score = fields.Float(string='Điểm tối đa', required=True)
-    sequence = fields.Integer(string='Thứ tự', default=10)
-    note = fields.Text(string='Hướng dẫn chấm')
+    # Hiển thị thông tin từ master (read-only, kế thừa từ criteria_id)
+    code = fields.Char(
+        related='criteria_id.code', string='Mã',
+        readonly=True, store=False)
+    name = fields.Char(
+        related='criteria_id.name', string='Tên tiêu chí',
+        readonly=True, store=False)
+    parent_id = fields.Many2one(
+        related='criteria_id.parent_id', string='Tiêu chí cha',
+        readonly=True, store=True)
+
+    # Per-template overrides
+    max_score = fields.Float(
+        string='Điểm tối đa', required=True, default=0.0,
+        help='Điểm áp dụng cho biểu mẫu này. '
+             'Tự động lấy từ danh mục khi chọn tiêu chí, có thể chỉnh riêng.')
+    sequence = fields.Integer(
+        string='Thứ tự', default=10,
+        help='Số nhỏ hơn = hiển thị lên đầu')
+    note = fields.Text(
+        string='Hướng dẫn chấm',
+        help='Nếu để trống sẽ dùng hướng dẫn từ danh mục')
+
+    # Backward-compat alias used by views/imports
     synced_criteria_id = fields.Many2one(
-        'bv.evaluation.criteria', string='Tiêu chí đã đồng bộ',
-        readonly=True)
+        related='criteria_id', string='Đã đồng bộ',
+        readonly=True, store=False)
 
-    @api.onchange('source_criteria_id')
-    def _onchange_source_criteria(self):
-        if not self.source_criteria_id:
+    _unique_template_criteria = models.Constraint(
+        'unique(template_id, criteria_id)',
+        "Mỗi tiêu chí chỉ được thêm một lần vào cùng một biểu mẫu.")
+
+    @api.onchange('criteria_id')
+    def _onchange_criteria_id(self):
+        """Auto-populate per-template values from master when a criteria is picked."""
+        if not self.criteria_id:
             return
-        src = self.source_criteria_id
-        self.name = src.name
-        self.code = src.code or ''
-        self.max_score = src.max_score
-        self.note = src.note or ''
-        # If the source has a parent, try to find matching parent in this template
-        if src.parent_id:
-            parent_match = self.template_id.criteria_ids.filtered(
-                lambda c: c.name == src.parent_id.name and not c.parent_line_id
-            )
-            if parent_match:
-                self.parent_line_id = parent_match[0]
+        src = self.criteria_id
+        if not self.max_score:
+            self.max_score = src.max_score
+        if not self.note:
+            self.note = src.note or ''
+        if not self.sequence or self.sequence == 10:
+            self.sequence = src.sequence or 10

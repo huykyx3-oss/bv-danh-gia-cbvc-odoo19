@@ -1,6 +1,6 @@
 {
     'name': 'Đánh giá xếp loại cán bộ, viên chức',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Human Resources',
     'summary': 'Hệ thống tự đánh giá, xếp loại chất lượng CBVC bệnh viện theo QĐ 06/2026/QĐ-UBND',
     'description': """

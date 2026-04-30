@@ -161,37 +161,15 @@ class MonthlyEvaluation(models.Model):
     @api.onchange('template_id')
     def _onchange_template_id(self):
         """When employee selects a template, load its criteria immediately."""
-        # Always clear existing lines when template changes
         self.criteria_line_ids = [(5, 0, 0)]
         if not self.template_id:
             return
-
         tmpl = self.template_id
-        # Ensure criteria are synced to master
-        if tmpl.criteria_ids and not all(
-            tc.synced_criteria_id for tc in tmpl.criteria_ids.filtered(lambda c: c.parent_line_id)
-        ):
-            tmpl._sync_criteria_to_master()
-
-        # Build lines from synced leaf criteria (those with parent = a group)
-        leaf_tcs = tmpl.criteria_ids.filtered(
-            lambda c: c.parent_line_id and c.synced_criteria_id
-        ).sorted('sequence')
-
-        if leaf_tcs:
-            self.criteria_line_ids = [
-                (0, 0, {'criteria_id': tc.synced_criteria_id.id})
-                for tc in leaf_tcs
-            ]
-        else:
-            # Fallback: template has no parent grouping, load all synced criteria
-            all_tcs = tmpl.criteria_ids.filtered(
-                lambda c: c.synced_criteria_id
-            ).sorted('sequence')
-            self.criteria_line_ids = [
-                (0, 0, {'criteria_id': tc.synced_criteria_id.id})
-                for tc in all_tcs
-            ]
+        lines = tmpl.criteria_ids.filtered(lambda c: c.criteria_id).sorted('sequence')
+        self.criteria_line_ids = [
+            (0, 0, {'criteria_id': tc.criteria_id.id})
+            for tc in lines
+        ]
 
     @api.onchange('employee_id', 'month', 'year')
     def _onchange_populate_criteria(self):
@@ -228,49 +206,14 @@ class MonthlyEvaluation(models.Model):
                         CriteriaLine.create({'evaluation_id': rec.id, 'criteria_id': c.id})
 
     def _populate_from_template(self, rec, CriteriaLine):
-        """Create criteria lines from template, auto-creating master criteria as needed.
-        Two-pass: parents first so child parent_id references are valid."""
-        Criteria = self.env['bv.evaluation.criteria']
-        parent_map = {}  # template_criteria_id → bv.evaluation.criteria id
-
-        # Pass 1: create/find parent (group) criteria
-        for tc in rec.template_id.criteria_ids.filtered(lambda c: not c.parent_line_id).sorted('sequence'):
-            existing_parent = Criteria.search([
-                ('name', '=', tc.name),
-                ('category', '=', 'general'),
-                ('parent_id', '=', False),
-            ], limit=1)
-            if not existing_parent:
-                existing_parent = Criteria.create({
-                    'name': tc.name,
-                    'code': tc.code or '',
-                    'category': 'general',
-                    'max_score': tc.max_score,
-                    'sequence': tc.sequence,
-                })
-            parent_map[tc.id] = existing_parent.id
-
-        # Pass 2: create/find leaf criteria and their evaluation lines
-        for tc in rec.template_id.criteria_ids.filtered(lambda c: c.parent_line_id).sorted('sequence'):
-            parent_criteria_id = parent_map.get(tc.parent_line_id.id)
-            existing = Criteria.search([
-                ('name', '=', tc.name),
-                ('category', '=', 'general'),
-                ('parent_id', '=', parent_criteria_id),
-            ], limit=1)
-            if not existing:
-                existing = Criteria.create({
-                    'name': tc.name,
-                    'code': tc.code or '',
-                    'category': 'general',
-                    'max_score': tc.max_score,
-                    'sequence': tc.sequence,
-                    'parent_id': parent_criteria_id,
-                    'note': tc.note or '',
-                })
+        """Create criteria lines from template — each row already references master."""
+        existing = rec.criteria_line_ids.mapped('criteria_id')
+        for tc in rec.template_id.criteria_ids.filtered(lambda c: c.criteria_id).sorted('sequence'):
+            if tc.criteria_id in existing:
+                continue
             CriteriaLine.create({
                 'evaluation_id': rec.id,
-                'criteria_id': existing.id,
+                'criteria_id': tc.criteria_id.id,
             })
 
     @api.model_create_multi

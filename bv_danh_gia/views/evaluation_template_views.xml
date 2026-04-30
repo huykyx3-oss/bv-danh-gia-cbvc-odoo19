@@ -54,31 +54,36 @@
                     <notebook>
                         <page string="Tiêu chí đánh giá">
                             <div class="alert alert-info" style="margin-bottom:10px;">
-                                <strong>Hướng dẫn:</strong>
+                                <strong>Hướng dẫn nhập tiêu chí:</strong>
+                                <ol style="margin:4px 0 0 0;padding-left:18px;">
+                                    <li>Bấm <strong>"Thêm dòng"</strong> bên dưới để thêm 1 tiêu chí mới.</li>
+                                    <li>Ở cột <strong>"Tiêu chí (chọn từ danh mục)"</strong>, gõ <em>tên</em> hoặc <em>mã</em> tiêu chí — hệ thống sẽ gợi ý các tiêu chí có sẵn trong danh mục.</li>
+                                    <li>Khi chọn xong, các cột <strong>Mã</strong>, <strong>Tên</strong>, <strong>Tiêu chí cha</strong> tự động điền (đồng bộ với màn "Cấu hình tiêu chí đánh giá").</li>
+                                    <li>Nếu tiêu chí chưa có trong danh mục, bấm <strong>"Tạo và chỉnh sửa..."</strong> trong dropdown để thêm vào danh mục ngay.</li>
+                                    <li>Có thể chỉnh <strong>Điểm tối đa</strong> riêng cho biểu mẫu này (ban đầu lấy từ danh mục).</li>
+                                </ol>
+                                <hr style="margin:8px 0;"/>
+                                <strong>Giải thích các trường:</strong>
                                 <ul style="margin:4px 0 0 0;padding-left:18px;">
-                                    <li><strong>Thứ tự (Seq):</strong> Số nhỏ hiển thị lên đầu trong biểu mẫu. Dùng để sắp xếp tiêu chí theo đúng thứ tự yêu cầu.</li>
-                                    <li><strong>Tiêu chí cha:</strong> Nếu tiêu chí này thuộc một nhóm (ví dụ: "I. Phẩm chất chính trị"), hãy chọn nhóm đó ở đây. Để trống nếu đây là tiêu chí gốc.</li>
-                                    <li><strong>Chọn từ danh mục:</strong> Gõ để tìm và chọn tiêu chí có sẵn — hệ thống tự điền tên, mã và điểm. Bạn có thể chỉnh sửa lại sau.</li>
-                                    <li><strong>Trọng số điểm KQTHNV</strong> (ở tab trên): Điểm tối đa của Phần II "Kết quả thực hiện nhiệm vụ" — mặc định 70/100. Phần I (tiêu chí chung) chiếm phần còn lại (thường 30 điểm).</li>
+                                    <li><strong>Thứ tự:</strong> Số nhỏ hơn hiển thị lên đầu (10, 20, 30…). Có thể kéo thả ô bên trái để đổi thứ tự.</li>
+                                    <li><strong>Trọng số điểm KQTHNV</strong> (tab thông tin chung): Điểm tối đa của Phần II — mặc định <strong>70</strong>/100. Phần I (tiêu chí chung) chiếm 30 điểm còn lại.</li>
                                 </ul>
                             </div>
                             <field name="criteria_ids">
-                                <list editable="bottom">
+                                <list editable="bottom" no_open="1">
                                     <field name="sequence" widget="handle" string="Seq"/>
-                                    <field name="source_criteria_id"
-                                           string="Chọn từ danh mục"
-                                           options='{"no_create": true}'
-                                           optional="show"
-                                           help="Chọn từ danh mục để tự động điền tên và điểm tối đa"/>
-                                    <field name="code"/>
-                                    <field name="name"/>
-                                    <field name="parent_line_id"
+                                    <field name="criteria_id"
+                                           string="Tiêu chí (chọn từ danh mục)"
+                                           options='{"no_quick_create": true, "no_open": true}'
+                                           context="{'default_category': 'general', 'default_active': True}"
+                                           required="1"/>
+                                    <field name="code" readonly="1" force_save="1" optional="show"/>
+                                    <field name="parent_id"
                                            string="Tiêu chí cha"
-                                           domain="[('template_id', '=', parent.id)]"
-                                           options='{"no_create": true}'/>
-                                    <field name="max_score"/>
+                                           readonly="1" force_save="1"
+                                           optional="show"/>
+                                    <field name="max_score" string="Điểm tối đa"/>
                                     <field name="note" optional="hide"/>
-                                    <field name="synced_criteria_id" readonly="1" optional="hide"/>
                                 </list>
                             </field>
                             <group>

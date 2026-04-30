@@ -1,7 +1,6 @@
 /** @odoo-module **/
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { session } from "@web/session";
 import { Component, useState, onWillStart, onMounted } from "@odoo/owl";
 
 export class EvaluationFormView extends Component {
@@ -34,15 +33,10 @@ export class EvaluationFormView extends Component {
             classification: '',
             filledCount: 0,
             totalCriteria: 0,
-            isDeptManager: false,
             canEditDept: false,
         });
 
         onWillStart(async () => {
-            this.state.isDeptManager = await this.orm.call(
-                'res.users', 'has_group',
-                [[session.uid], 'bv_danh_gia.group_evaluation_dept_manager'],
-            );
             if (this.evalId) {
                 await this.loadRecord();
             } else {
@@ -57,6 +51,7 @@ export class EvaluationFormView extends Component {
             'employee_id', 'department_id', 'job_id', 'month', 'year',
             'is_manager', 'state', 'general_score', 'task_score', 'total_score',
             'general_score_max', 'task_score_max',
+            'can_edit_dept_score',
             'classification', 'strengths', 'weaknesses', 'authority_comment',
             'pct_quantity', 'pct_quality', 'pct_progress',
             'pct_field_result', 'pct_organization', 'pct_team_cohesion',
@@ -65,8 +60,7 @@ export class EvaluationFormView extends Component {
         this.state.record = record;
         this.state.generalMax = record.general_score_max || 30;
         this.state.taskMax = record.task_score_max || 70;
-        // Manager can score only when state is 'submitted' (waiting for dept approval)
-        this.state.canEditDept = this.state.isDeptManager && record.state === 'submitted';
+        this.state.canEditDept = !!record.can_edit_dept_score;
 
         const lineIds = record.criteria_line_ids;
         if (lineIds && lineIds.length > 0) {
@@ -166,6 +160,22 @@ export class EvaluationFormView extends Component {
                 if (c.lineId === lineId) {
                     c.selectedScore = score;
                     c.selfScore = score;
+                }
+            }
+        }
+        this._recalculate();
+    }
+
+    /** Employee types self-score directly per criterion */
+    updateCriteriaScore(lineId, rawValue, maxScore) {
+        if (this.state.record && this.state.record.state !== 'draft') return;
+        const v = Math.min(maxScore, Math.max(0, parseFloat(rawValue) || 0));
+        this.state.scores[lineId] = v;
+        for (const g of this.state.criteria_groups) {
+            for (const c of g.criteria) {
+                if (c.lineId === lineId) {
+                    c.selectedScore = v;
+                    c.selfScore = v;
                 }
             }
         }

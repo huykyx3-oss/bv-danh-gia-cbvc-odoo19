@@ -37,11 +37,6 @@
                     <button string="Giao diện đánh giá mới" type="object"
                             name="action_open_custom_form" class="btn-primary"
                             icon="fa-paint-brush"/>
-                    <button string="Sửa lỗi tiêu chí" type="object"
-                            name="action_sanitize_lines" class="btn-secondary"
-                            icon="fa-magic"
-                            help="Xóa các dòng tiêu chí lỗi và tải lại từ biểu mẫu/danh mục"
-                            confirm="Sẽ xóa các dòng tiêu chí không hợp lệ và tải lại từ biểu mẫu/danh mục. Tiếp tục?"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,submitted,dept_approved,hr_reviewed,approved"/>
                 </header>
@@ -89,7 +84,7 @@
                                        string="Điểm tối đa phần I (theo biểu mẫu)"/>
                             </group>
                             <field name="criteria_line_ids"
-                                   readonly="state != 'draft'">
+                                   readonly="state != 'draft' and not can_edit_dept_score">
                                 <list editable="bottom" create="false">
                                     <field name="parent_criteria_id" optional="show" readonly="1"/>
                                     <field name="criteria_id" readonly="1" force_save="1"/>
@@ -98,7 +93,7 @@
                                            readonly="parent.state != 'draft'"
                                            string="NV tự chấm"/>
                                     <field name="dept_score"
-                                           readonly="1"
+                                           readonly="not parent.can_edit_dept_score"
                                            string="TK/TP chấm"
                                            column_invisible="parent.state == 'draft'"
                                            optional="show"/>
@@ -382,7 +377,7 @@
         <field name="name">Duyệt &amp; Chấm điểm (Trưởng Khoa/Phòng)</field>
         <field name="res_model">bv.monthly.evaluation</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state', '=', 'submitted')]</field>
+        <field name="domain">[('state', 'in', ['submitted', 'dept_approved', 'hr_reviewed', 'approved', 'rejected'])]</field>
         <field name="views" eval="[(ref('view_monthly_evaluation_tree'), 'list'), (ref('view_monthly_evaluation_dept_form'), 'form')]"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Không có phiếu nào chờ duyệt</p>
@@ -395,6 +390,6 @@
         <field name="name">Xét duyệt phiếu đánh giá (TCCB)</field>
         <field name="res_model">bv.monthly.evaluation</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state', '=', 'dept_approved')]</field>
+        <field name="domain">[('state', 'in', ['dept_approved', 'hr_reviewed', 'approved', 'rejected'])]</field>
     </record>
 </odoo>

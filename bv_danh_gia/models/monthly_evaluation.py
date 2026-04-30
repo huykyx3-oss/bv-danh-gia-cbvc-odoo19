@@ -53,6 +53,10 @@ class MonthlyEvaluation(models.Model):
     is_manager = fields.Boolean(
         string='Giữ chức vụ lãnh đạo, quản lý',
         help='Viên chức giữ chức vụ lãnh đạo, quản lý sẽ áp dụng công thức tính điểm khác')
+    can_edit_dept_score = fields.Boolean(
+        string='Có thể chấm điểm trưởng khoa',
+        compute='_compute_can_edit_dept_score',
+        help='Đúng khi user hiện tại là trưởng khoa/phòng và phiếu đang chờ duyệt cấp khoa')
     template_id = fields.Many2one(
         'bv.evaluation.template', string='Biểu mẫu đánh giá',
         domain="[('active', '=', True), ('template_type', '=', 'monthly')]",
@@ -128,6 +132,14 @@ class MonthlyEvaluation(models.Model):
         for rec in self:
             m = int(rec.month) if rec.month else 1
             rec.quarter = (m - 1) // 3 + 1
+
+    @api.depends('state')
+    def _compute_can_edit_dept_score(self):
+        for rec in self:
+            rec.can_edit_dept_score = (
+                rec.state == 'submitted'
+                and self.env.user.has_group('bv_danh_gia.group_evaluation_dept_manager')
+            )
 
     @api.depends('criteria_line_ids.final_score')
     def _compute_general_score(self):
@@ -347,25 +359,6 @@ class MonthlyEvaluation(models.Model):
             'tag': 'bv_danh_gia.evaluation_form_custom',
             'name': f'Phiếu đánh giá - {self.display_name}',
             'context': {'eval_id': self.id, 'active_id': self.id},
-        }
-
-    def action_sanitize_lines(self):
-        """Manual cleanup button: remove orphan criteria lines and re-populate."""
-        for rec in self:
-            bad = rec.criteria_line_ids.filtered(lambda l: not l.criteria_id)
-            if bad:
-                bad.sudo().unlink()
-            if not rec.criteria_line_ids:
-                rec._populate_criteria_lines()
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Đã làm sạch',
-                'message': 'Đã xóa các dòng tiêu chí lỗi và tải lại từ biểu mẫu.',
-                'type': 'success',
-                'sticky': False,
-            },
         }
 
     # --- Export actions ---

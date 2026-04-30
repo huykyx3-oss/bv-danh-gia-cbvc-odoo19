@@ -15,7 +15,7 @@ class ExportDocxController(http.Controller):
 
         try:
             from docx import Document
-            from docx.shared import Pt, Inches, Cm
+            from docx.shared import Pt
             from docx.enum.text import WD_ALIGN_PARAGRAPH
             from docx.enum.table import WD_TABLE_ALIGNMENT
         except ImportError:
@@ -24,170 +24,333 @@ class ExportDocxController(http.Controller):
                             'Chạy: pip install python-docx'}),
                 headers=[('Content-Type', 'application/json')])
 
-        doc = Document()
+        def _fmt_score(value):
+            """Format score with Vietnamese decimal comma."""
+            try:
+                num = float(value or 0.0)
+            except Exception:
+                return ''
+            if abs(num - round(num)) < 1e-9:
+                return str(int(round(num)))
+            # keep up to 2 decimals, trim trailing zero, then convert dot->comma
+            txt = f'{num:.2f}'.rstrip('0').rstrip('.')
+            return txt.replace('.', ',')
 
+        # ------------------------------------------------------------------ #
+        # Document base style
+        # ------------------------------------------------------------------ #
+        doc = Document()
         style = doc.styles['Normal']
         style.font.name = 'Times New Roman'
         style.font.size = Pt(13)
-        for font_name in ('ascii', 'hAnsi', 'eastAsia', 'cs'):
-            setattr(style.font, font_name, 'Times New Roman')
 
-        def _set_cell_text(cell, text, align=WD_ALIGN_PARAGRAPH.LEFT, bold=False, italic=False):
-            cell.text = ''
-            p = cell.paragraphs[0]
-            p.alignment = align
-            run = p.add_run(text or '')
-            run.bold = bold
-            run.italic = italic
-            run.font.name = 'Times New Roman'
-            run.font.size = Pt(13)
-            return p
+        # ------------------------------------------------------------------ #
+        # Nhãn "Mẫu số 01" — canh phải, trên cùng
+        # ------------------------------------------------------------------ #
+        p_mau = doc.add_paragraph()
+        p_mau.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        run_mau = p_mau.add_run('Mẫu số 01')
+        run_mau.italic = True
+        run_mau.font.size = Pt(12)
 
-        def _add_paragraph(text='', align=WD_ALIGN_PARAGRAPH.LEFT, bold=False, italic=False):
-            p = doc.add_paragraph()
-            p.alignment = align
-            run = p.add_run(text or '')
-            run.bold = bold
-            run.italic = italic
-            run.font.name = 'Times New Roman'
-            run.font.size = Pt(13)
-            return p
-
-        def _fmt_score(value):
-            if value is None:
-                return ''
-            num = float(value)
-            if num.is_integer():
-                return str(int(num))
-            return f'{num:.2f}'.rstrip('0').rstrip('.')
-
-        # --- Header ---
+        # ------------------------------------------------------------------ #
+        # Header — bảng 2 cột, không border
+        # ------------------------------------------------------------------ #
         table_header = doc.add_table(rows=1, cols=2)
         table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
+
         cell_left = table_header.cell(0, 0)
+        p_left = cell_left.paragraphs[0]
+        p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p_left.add_run('SỞ Y TẾ TỈNH QUẢNG NINH')
+        run.bold = True
+        run.font.size = Pt(12)
+        run2 = p_left.add_run('\nBỆNH VIỆN ĐA KHOA TỈNH')
+        run2.bold = True
+        run2.font.size = Pt(12)
+
         cell_right = table_header.cell(0, 1)
+        p_right = cell_right.paragraphs[0]
+        p_right.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p_right.add_run('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM')
+        run.bold = True
+        run.font.size = Pt(12)
+        run2 = p_right.add_run('\nĐộc lập – Tự do – Hạnh phúc')
+        run2.bold = True
+        run2.font.size = Pt(12)
+        p_right.add_run('\n──────────────').font.size = Pt(12)
 
-        _set_cell_text(cell_left, 'TÊN CƠ QUAN,\nTỔ CHỨC, ĐƠN VỊ', WD_ALIGN_PARAGRAPH.CENTER, bold=True)
-        p_right = _set_cell_text(
-            cell_right,
-            'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc',
-            WD_ALIGN_PARAGRAPH.CENTER,
-            bold=True,
-        )
-        p_right.add_run('\n──────────────').font.size = Pt(13)
+        doc.add_paragraph()
 
-        _add_paragraph('Mẫu số 01', WD_ALIGN_PARAGRAPH.RIGHT, bold=True)
-        _add_paragraph('PHIẾU THEO DÕI, ĐÁNH GIÁ CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC', WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        # ------------------------------------------------------------------ #
+        # Tiêu đề
+        # ------------------------------------------------------------------ #
+        title = doc.add_paragraph()
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = title.add_run('PHIẾU THEO DÕI, ĐÁNH GIÁ CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC')
+        run.bold = True
+        run.font.size = Pt(14)
 
-        month_labels = dict([
-            ('1', 'Tháng 1'), ('2', 'Tháng 2'), ('3', 'Tháng 3'),
-            ('4', 'Tháng 4'), ('5', 'Tháng 5'), ('6', 'Tháng 6'),
-            ('7', 'Tháng 7'), ('8', 'Tháng 8'), ('9', 'Tháng 9'),
-            ('10', 'Tháng 10'), ('11', 'Tháng 11'), ('12', 'Tháng 12'),
-        ])
-        _add_paragraph(
-            f'(Kỳ theo dõi, đánh giá: {month_labels.get(evaluation.month, "")} năm {evaluation.year})',
-            WD_ALIGN_PARAGRAPH.CENTER,
-            italic=True,
-        )
+        month_labels = {
+            '1': 'Tháng 1', '2': 'Tháng 2', '3': 'Tháng 3',
+            '4': 'Tháng 4', '5': 'Tháng 5', '6': 'Tháng 6',
+            '7': 'Tháng 7', '8': 'Tháng 8', '9': 'Tháng 9',
+            '10': 'Tháng 10', '11': 'Tháng 11', '12': 'Tháng 12',
+        }
+        subtitle = doc.add_paragraph()
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        subtitle.add_run(
+            f'(Kỳ theo dõi, đánh giá: '
+            f'{month_labels.get(str(evaluation.month), str(evaluation.month))} '
+            f'năm {evaluation.year})'
+        ).font.size = Pt(12)
 
-        # --- Personal info ---
-        _add_paragraph(f'Họ và tên: {evaluation.employee_id.name or ""}')
-        _add_paragraph(f'Chức vụ, chức danh: {evaluation.job_id.name or ""}')
-        _add_paragraph(f'Đơn vị công tác: {evaluation.department_id.name or ""}')
+        # ------------------------------------------------------------------ #
+        # Thông tin cá nhân
+        # ------------------------------------------------------------------ #
+        doc.add_paragraph(f'Họ và tên: {evaluation.employee_id.name or ""}')
+        doc.add_paragraph(f'Chức vụ, chức danh: {evaluation.job_id.name or ""}')
+        doc.add_paragraph(f'Đơn vị công tác: {evaluation.department_id.name or ""}')
 
-        # --- I. Tiêu chí chung ---
-        _add_paragraph('I. KẾT QUẢ THEO DÕI, ĐÁNH GIÁ THEO TIÊU CHÍ CHUNG', bold=True)
+        # ------------------------------------------------------------------ #
+        # I. Bảng tiêu chí chung — 5 cột
+        # ------------------------------------------------------------------ #
+        h1 = doc.add_paragraph()
+        run = h1.add_run('I. KẾT QUẢ THEO DÕI, ĐÁNH GIÁ THEO TIÊU CHÍ CHUNG')
+        run.bold = True
 
-        table = doc.add_table(rows=2, cols=4)
+        # Số La Mã cho nhóm cha
+        ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+
+        table = doc.add_table(rows=1, cols=5)
         table.style = 'Table Grid'
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-        headers = ['TT', 'Tiêu chí chấm điểm', 'Điểm tối đa', 'Điểm tự chấm']
-        sub_headers = ['(1)', '(2)', '(3)', '(4)']
-        for i, h in enumerate(headers):
-            _set_cell_text(table.rows[0].cells[i], h, WD_ALIGN_PARAGRAPH.CENTER, bold=True)
-            _set_cell_text(table.rows[1].cells[i], sub_headers[i], WD_ALIGN_PARAGRAPH.CENTER, italic=True)
+        col_headers = [
+            'TT', 'Tiêu chí chấm điểm', 'Điểm tối đa',
+            'Điểm tự chấm', 'Trưởng khoa/phòng chấm',
+        ]
+        for i, h in enumerate(col_headers):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            for p in cell.paragraphs:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for r in p.runs:
+                    r.bold = True
+                    r.font.size = Pt(11)
 
-        general_score_max = evaluation.general_score_max or 30.0
-        task_score_max = evaluation.task_score_max or 70.0
+        # Dòng chỉ số cột theo mẫu: (1) (2) (3)
+        index_row = table.add_row()
+        index_row.cells[0].text = '(1)'
+        index_row.cells[1].text = '(2)'
+        index_row.cells[2].text = '(3)'
+        index_row.cells[3].text = ''
+        index_row.cells[4].text = ''
+        for i in [0, 1, 2, 3, 4]:
+            for p in index_row.cells[i].paragraphs:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for r in p.runs:
+                    r.bold = True
+                    r.font.size = Pt(11)
 
-        for idx, line in enumerate(evaluation.criteria_line_ids, 1):
-            row = table.add_row()
-            _set_cell_text(row.cells[0], str(idx), WD_ALIGN_PARAGRAPH.CENTER)
-            _set_cell_text(row.cells[1], line.criteria_id.name or '', WD_ALIGN_PARAGRAPH.LEFT)
-            _set_cell_text(row.cells[2], _fmt_score(line.max_score), WD_ALIGN_PARAGRAPH.CENTER)
-            _set_cell_text(row.cells[3], _fmt_score(line.self_score), WD_ALIGN_PARAGRAPH.CENTER)
+        # Nhóm các line theo parent_criteria_id (giữ thứ tự xuất hiện)
+        # parent_criteria_id là related field: criteria_id.parent_id
+        seen_parents = []
+        groups = {}  # parent_id (hoặc False) -> [lines]
+        for line in evaluation.criteria_line_ids:
+            parent = line.parent_criteria_id  # Many2one record hoặc False
+            parent_key = parent.id if parent else False
+            if parent_key not in groups:
+                groups[parent_key] = {'parent': parent, 'lines': []}
+                seen_parents.append(parent_key)
+            groups[parent_key]['lines'].append(line)
 
+        for group_idx, parent_key in enumerate(seen_parents):
+            group = groups[parent_key]
+            parent = group['parent']
+            group_lines = group['lines']
+
+            # Dòng nhóm (I / II / III ...) — nếu có parent
+            if parent:
+                group_row = table.add_row()
+                roman = ROMAN[group_idx] if group_idx < len(ROMAN) else str(group_idx + 1)
+                group_row.cells[0].text = roman
+                group_row.cells[1].text = parent.name or ''
+                # Lấy điểm nhóm theo tổng các dòng con để khớp cấu trúc mẫu
+                group_row.cells[2].text = _fmt_score(sum(l.max_score for l in group_lines))
+                group_row.cells[3].text = ''
+                group_row.cells[4].text = ''
+                for i in [0, 2, 3, 4]:
+                    for p in group_row.cells[i].paragraphs:
+                        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for c in range(5):
+                    for p in group_row.cells[c].paragraphs:
+                        for r in p.runs:
+                            r.bold = True
+                            r.font.size = Pt(11)
+
+            # Dòng con
+            sub_counter = 0
+            for line in group_lines:
+                sub_counter += 1
+                row = table.add_row()
+                row.cells[0].text = str(sub_counter)
+                row.cells[1].text = line.criteria_id.name or ''
+                row.cells[2].text = _fmt_score(line.max_score)
+                row.cells[3].text = _fmt_score(line.self_score)
+                row.cells[4].text = _fmt_score(line.dept_score)
+                for i in [0, 2, 3, 4]:
+                    for p in row.cells[i].paragraphs:
+                        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for p in row.cells[1].paragraphs:
+                    for r in p.runs:
+                        r.font.size = Pt(11)
+
+        # Dòng tổng cộng — merge 2 ô đầu
         total_row = table.add_row()
-        total_row.cells[0].merge(total_row.cells[1])
-        _set_cell_text(total_row.cells[0], 'Tổng cộng', WD_ALIGN_PARAGRAPH.CENTER, bold=True)
-        _set_cell_text(total_row.cells[2], _fmt_score(general_score_max), WD_ALIGN_PARAGRAPH.CENTER, bold=True)
-        _set_cell_text(total_row.cells[3], _fmt_score(evaluation.general_score), WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        merged_total = total_row.cells[0].merge(total_row.cells[1])
+        p_tc = merged_total.paragraphs[0]
+        p_tc.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run_tc = p_tc.add_run('Tổng cộng')
+        run_tc.bold = True
+        run_tc.font.size = Pt(11)
 
-        # --- II. Tổng hợp ---
-        _add_paragraph('II. TỔNG HỢP KẾT QUẢ THEO DÕI, ĐÁNH GIÁ CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC', bold=True)
-        _add_paragraph(f'1. Điểm tiêu chí chung: {_fmt_score(evaluation.general_score)} điểm')
-        _add_paragraph('2. Điểm tiêu chí kết quả thực hiện nhiệm vụ:')
-        _add_paragraph(f'- a là điểm tỷ lệ phần trăm (%) về số lượng kết quả thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_quantity)}%')
-        _add_paragraph(f'- b là điểm tỷ lệ phần trăm (%) về chất lượng kết quả thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_quality)}%')
-        _add_paragraph(f'- c là điểm tỷ lệ phần trăm (%) về tiến độ kết quả thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_progress)}%')
+        general_max = evaluation.general_score_max or 30.0
+        total_row.cells[2].text = _fmt_score(general_max)
+        total_row.cells[3].text = _fmt_score(sum(evaluation.criteria_line_ids.mapped('self_score')))
+        total_row.cells[4].text = _fmt_score(sum(evaluation.criteria_line_ids.mapped('dept_score')))
+        for i in [2, 3, 4]:
+            for p in total_row.cells[i].paragraphs:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for r in p.runs:
+                    r.bold = True
+                    r.font.size = Pt(11)
+
+        # ------------------------------------------------------------------ #
+        # II. Tổng hợp kết quả
+        # ------------------------------------------------------------------ #
+        doc.add_paragraph()
+        h2 = doc.add_paragraph()
+        run = h2.add_run(
+            'II. TỔNG HỢP KẾT QUẢ THEO DÕI, ĐÁNH GIÁ CÁN BỘ, CÔNG CHỨC, VIÊN CHỨC'
+        )
+        run.bold = True
+
+        doc.add_paragraph(f'1. Điểm tiêu chí chung: {_fmt_score(evaluation.general_score)}')
+        doc.add_paragraph('2. Điểm tiêu chí kết quả thực hiện nhiệm vụ:')
+
+        # Nhãn a, b, c dùng mô tả đầy đủ theo mẫu
+        doc.add_paragraph(
+            f'   - a là điểm tỷ lệ phần trăm (%) về số lượng kết quả '
+                f'thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_quantity)}%'
+        )
+        doc.add_paragraph(
+            f'   - b là điểm tỷ lệ phần trăm (%) về chất lượng kết quả '
+                f'thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_quality)}%'
+        )
+        doc.add_paragraph(
+            f'   - c là điểm tỷ lệ phần trăm (%) về tiến độ kết quả '
+                f'thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_progress)}%'
+        )
+
         if evaluation.is_manager:
-            _add_paragraph(
-                f'- d là điểm tỷ lệ phần trăm (%) về kết quả hoạt động của lĩnh vực được giao lãnh đạo, quản lý, phụ trách: {_fmt_score(evaluation.pct_field_result)}%'
+            doc.add_paragraph(
+                f'   - d là điểm tỷ lệ phần trăm (%) về kết quả hoạt động của '
+                f'lĩnh vực được giao lãnh đạo, quản lý, phụ trách: '
+                f'{_fmt_score(evaluation.pct_field_result)}%'
             )
-            _add_paragraph(
-                f'- đ là điểm tỷ lệ phần trăm (%) về khả năng tổ chức triển khai thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_organization)}%'
+            doc.add_paragraph(
+                f'   - đ là điểm tỷ lệ phần trăm (%) về khả năng tổ chức '
+                f'triển khai thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_organization)}%'
             )
-            _add_paragraph(
-                f'- e là điểm tỷ lệ phần trăm (%) về năng lực tập hợp, đoàn kết công chức thuộc phạm vi quản lý: {_fmt_score(evaluation.pct_team_cohesion)}%'
+            doc.add_paragraph(
+                f'   - e là điểm tỷ lệ phần trăm (%) về năng lực tập hợp, '
+                f'đoàn kết công chức thuộc phạm vi quản lý: '
+                f'{_fmt_score(evaluation.pct_team_cohesion)}%'
             )
 
-        role_label = 'giữ chức vụ' if evaluation.is_manager else 'không giữ chức vụ'
-        _add_paragraph(
-            f'Điểm tiêu chí kết quả thực hiện nhiệm vụ (đối với CBCCVC {role_label}): {_fmt_score(evaluation.task_score)} / {_fmt_score(task_score_max)} điểm'
-        )
-        _add_paragraph(
-            f'3. Tổng điểm theo dõi, đánh giá cán bộ, công chức, viên chức: {_fmt_score(evaluation.total_score)} điểm',
-            bold=True,
-        )
-        _add_paragraph(f'4. Ưu điểm: {evaluation.strengths or ""}')
-        _add_paragraph(f'5. Hạn chế, khuyết điểm: {evaluation.weaknesses or ""}')
-        _add_paragraph(f'6. Ý kiến nhận xét của cấp có thẩm quyền theo dõi, đánh giá: {evaluation.authority_comment or ""}')
+        # Hai dòng điểm KQTHNV: một cho không giữ chức vụ, một cho giữ chức vụ
+        if not evaluation.is_manager:
+            doc.add_paragraph(
+                f'   Điểm tiêu chí kết quả thực hiện nhiệm vụ '
+                f'(đối với CBCCVC không giữ chức vụ): '
+                f'{_fmt_score(evaluation.task_score)} điểm'
+            )
+        else:
+            doc.add_paragraph(
+                f'   Điểm tiêu chí kết quả thực hiện nhiệm vụ '
+                f'(đối với CBCCVC giữ chức vụ): '
+                f'{_fmt_score(evaluation.task_score)} điểm'
+            )
 
-        # --- Signatures ---
+        p_total = doc.add_paragraph()
+        run = p_total.add_run(
+            f'3. Tổng điểm theo dõi, đánh giá cán bộ, công chức, viên chức: '
+            f'{_fmt_score(evaluation.total_score)} điểm'
+        )
+        run.bold = True
+
+        doc.add_paragraph(f'4. Ưu điểm: {evaluation.strengths or ""}')
+        doc.add_paragraph(f'5. Hạn chế, khuyết điểm: {evaluation.weaknesses or ""}')
+        doc.add_paragraph(
+            f'6. Ý kiến nhận xét của cấp có thẩm quyền theo dõi, đánh giá: '
+            f'{evaluation.authority_comment or ""}'
+        )
+
+        # ------------------------------------------------------------------ #
+        # Chữ ký — bảng 1 hàng, 2 cột (gộp ngày + chức danh + họ tên vào
+        # cùng một ô, đúng theo mẫu docx)
+        # ------------------------------------------------------------------ #
+        doc.add_paragraph()
         sig_table = doc.add_table(rows=1, cols=2)
         sig_table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-        for col_idx, title_text in enumerate([
-            ('CBCCVC TỰ ĐÁNH GIÁ', '(Ký tên, ghi rõ họ tên)'),
-            ('CẤP CÓ THẨM QUYỀN\nTHEO DÕI, ĐÁNH GIÁ', '(Ký tên, ghi rõ họ tên)'),
-        ]):
-            title, subtitle = title_text
+        sig_data = [
+            ('CBCCVC TỰ ĐÁNH GIÁ', evaluation.employee_id.name or ''),
+            ('CẤP CÓ THẨM QUYỀN\nTHEO DÕI, ĐÁNH GIÁ', ''),
+        ]
+        for col_idx, (role_title, signer_name) in enumerate(sig_data):
             cell = sig_table.cell(0, col_idx)
-            cell.text = ''
             p = cell.paragraphs[0]
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.add_run('....., ngày....tháng.....năm.....').italic = True
-            p.add_run('\n')
-            p.add_run(title).bold = True
-            p.add_run('\n')
-            p.add_run(subtitle).italic = True
-            if col_idx == 0 and evaluation.employee_id.name:
-                p.add_run(f'\n\n\n{evaluation.employee_id.name}')
 
-        # Write to buffer
+            run_date = p.add_run('....., ngày.... tháng..... năm.....')
+            run_date.italic = True
+            run_date.font.size = Pt(12)
+
+            p.add_run('\n')
+            run_title = p.add_run(role_title)
+            run_title.bold = True
+            run_title.font.size = Pt(12)
+
+            p.add_run('\n')
+            run_sub = p.add_run('(Ký tên, ghi rõ họ tên)')
+            run_sub.italic = True
+            run_sub.font.size = Pt(12)
+
+            if signer_name:
+                p.add_run(f'\n\n\n\n{signer_name}').font.size = Pt(12)
+
+        # ------------------------------------------------------------------ #
+        # Xuất ra buffer
+        # ------------------------------------------------------------------ #
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)
 
-        filename = f'Mau_01_{evaluation.employee_id.name}_{evaluation.month}_{evaluation.year}.docx'
+        filename = (
+            f'Mau_01_{evaluation.employee_id.name}_'
+            f'{evaluation.month}_{evaluation.year}.docx'
+        )
         return request.make_response(
             buffer.getvalue(),
             headers=[
-                ('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+                ('Content-Type',
+                 'application/vnd.openxmlformats-officedocument'
+                 '.wordprocessingml.document'),
                 ('Content-Disposition', content_disposition(filename)),
-            ])
+            ]
+        )
 
     @http.route('/bv_danh_gia/export_mau02/<int:record_id>', type='http', auth='user')
     def export_mau02_docx(self, record_id, **kwargs):

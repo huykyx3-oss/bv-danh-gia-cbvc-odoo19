@@ -121,20 +121,16 @@
                                             <div class="bv-dual-score-label">
                                                 <i class="fa fa-user"/> Nhân viên tự chấm
                                             </div>
-                                            <div class="bv-criteria-options">
-                                                <t t-foreach="criterion.options" t-as="opt" t-key="opt.score">
-                                                    <div t-att-class="'bv-option-item' + (criterion.selectedScore === opt.score ? ' selected' : '') + (state.record.state !== 'draft' ? ' disabled' : '')"
-                                                         t-on-click="() => state.record.state === 'draft' &amp;&amp; this.selectCriteriaScore(criterion.lineId, opt.score)">
-                                                        <div class="bv-radio-dot"/>
-                                                        <div class="bv-option-content">
-                                                            <div class="bv-option-level"><t t-esc="opt.label"/></div>
-                                                            <t t-if="opt.desc">
-                                                                <div class="bv-option-desc"><t t-esc="opt.desc"/></div>
-                                                            </t>
-                                                        </div>
-                                                        <span class="bv-option-score-badge"><t t-esc="opt.score"/> đ</span>
-                                                    </div>
-                                                </t>
+                                            <div class="bv-dept-input-wrap">
+                                                <input type="number" min="0" t-att-max="criterion.maxScore" step="0.5"
+                                                       t-att-value="criterion.selectedScore"
+                                                       t-att-disabled="state.record.state === 'draft' ? undefined : 'disabled'"
+                                                       t-on-input="(ev) => this.updateCriteriaScore(criterion.lineId, ev.target.value, criterion.maxScore)"
+                                                       class="bv-dept-input"/>
+                                                <span class="bv-dept-input-suffix">/ <t t-esc="criterion.maxScore"/> đ</span>
+                                            </div>
+                                            <div style="font-size:11px;color:#6b6760;margin-top:4px;">
+                                                Nhập điểm trực tiếp cho từng tiêu chí
                                             </div>
                                         </div>
 

@@ -246,7 +246,7 @@ class MonthlyEvaluation(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        records._populate_criteria_lines()
+        records.filtered(lambda r: not r.criteria_line_ids)._populate_criteria_lines()
         return records
 
     @api.constrains('pct_quantity', 'pct_quality', 'pct_progress',

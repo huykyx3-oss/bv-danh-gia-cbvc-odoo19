@@ -88,7 +88,7 @@
                                    readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="parent_criteria_id" optional="show" readonly="1"/>
-                                    <field name="criteria_id" readonly="1"/>
+                                    <field name="criteria_id" readonly="1" force_save="1"/>
                                     <field name="max_score" readonly="1"/>
                                     <field name="self_score"
                                            readonly="parent.state != 'draft'"
@@ -240,7 +240,7 @@
                                    readonly="state != 'submitted'">
                                 <list editable="bottom">
                                     <field name="parent_criteria_id" readonly="1" optional="show"/>
-                                    <field name="criteria_id" readonly="1"/>
+                                    <field name="criteria_id" readonly="1" force_save="1"/>
                                     <field name="max_score" readonly="1"/>
                                     <field name="self_score" readonly="1"
                                            string="NV tự chấm"

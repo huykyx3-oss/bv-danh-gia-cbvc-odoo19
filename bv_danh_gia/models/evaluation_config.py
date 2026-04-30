@@ -62,9 +62,10 @@ class EvaluationConfig(models.Model):
         for rec in self:
             rec.display_name = f'Cấu hình đánh giá năm {rec.year}'
 
-    _sql_constraints = [
-        ('unique_year', 'UNIQUE(year)', 'Chỉ có một cấu hình cho mỗi năm!'),
-    ]
+    _unique_year = models.Constraint(
+        'UNIQUE(year)',
+        'Chỉ có một cấu hình cho mỗi năm!'
+    )
 
     @api.model
     def get_config(self, year=None):

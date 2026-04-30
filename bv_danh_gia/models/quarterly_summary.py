@@ -55,11 +55,10 @@ class QuarterlySummary(models.Model):
 
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
-    _sql_constraints = [
-        ('unique_employee_quarter_year',
-         'UNIQUE(employee_id, quarter, year)',
-         'Mỗi nhân viên chỉ có một bản tổng hợp trong một quý!'),
-    ]
+    _unique_employee_quarter_year = models.Constraint(
+        'UNIQUE(employee_id, quarter, year)',
+        'Mỗi nhân viên chỉ có một bản tổng hợp trong một quý!'
+    )
 
     @api.depends('employee_id', 'quarter', 'year')
     def _compute_display_name(self):

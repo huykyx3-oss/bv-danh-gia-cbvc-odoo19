@@ -64,11 +64,10 @@ class YearlyClassification(models.Model):
 
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
-    _sql_constraints = [
-        ('unique_employee_year',
-         'UNIQUE(employee_id, year)',
-         'Mỗi nhân viên chỉ có một phiếu xếp loại trong một năm!'),
-    ]
+    _unique_employee_year = models.Constraint(
+        'UNIQUE(employee_id, year)',
+        'Mỗi nhân viên chỉ có một phiếu xếp loại trong một năm!'
+    )
 
     @api.depends('employee_id', 'year')
     def _compute_display_name(self):

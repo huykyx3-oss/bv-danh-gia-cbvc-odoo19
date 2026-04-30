@@ -101,11 +101,10 @@ class MonthlyEvaluation(models.Model):
 
     display_name = fields.Char(compute='_compute_display_name', store=True)
 
-    _sql_constraints = [
-        ('unique_employee_month_year',
-         'UNIQUE(employee_id, month, year)',
-         'Mỗi nhân viên chỉ có một phiếu đánh giá trong một tháng!'),
-    ]
+    _unique_employee_month_year = models.Constraint(
+        'UNIQUE(employee_id, month, year)',
+        'Mỗi nhân viên chỉ có một phiếu đánh giá trong một tháng!'
+    )
 
     @api.depends('employee_id', 'month', 'year')
     def _compute_display_name(self):

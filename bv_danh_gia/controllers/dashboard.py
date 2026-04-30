@@ -66,10 +66,7 @@ class EvaluationDashboardController(http.Controller):
                 } for e in my_latest]
 
         config = request.env['bv.evaluation.config'].sudo().search([], limit=1)
-        if config:
-            result['ratio_excellent'] = config.ratio_excellent
-        else:
-            result['ratio_excellent'] = 20.0
+        result['ratio_excellent'] = config.max_excellent_ratio if config else 20.0
 
         return result
 

@@ -8,7 +8,6 @@ export class EvaluationFormView extends Component {
     static props = ["*"];
 
     setup() {
-        this.rpc = useService("rpc");
         this.action = useService("action");
         this.notification = useService("notification");
         this.orm = useService("orm");

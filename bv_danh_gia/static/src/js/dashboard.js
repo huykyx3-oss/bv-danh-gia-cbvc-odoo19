@@ -1,6 +1,7 @@
 /** @odoo-module **/
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { rpc } from "@web/core/network/rpc";
 import { Component, useState, onWillStart } from "@odoo/owl";
 
 export class EvaluationDashboard extends Component {
@@ -8,7 +9,6 @@ export class EvaluationDashboard extends Component {
     static props = ["*"];
 
     setup() {
-        this.rpc = useService("rpc");
         this.action = useService("action");
         this.state = useState({
             data: null,
@@ -21,7 +21,7 @@ export class EvaluationDashboard extends Component {
 
     async loadData() {
         this.state.loading = true;
-        this.state.data = await this.rpc("/bv_danh_gia/dashboard_data", {});
+        this.state.data = await rpc("/bv_danh_gia/dashboard_data", {});
         this.state.loading = false;
     }
 

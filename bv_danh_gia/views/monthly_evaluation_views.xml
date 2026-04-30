@@ -65,18 +65,22 @@
                         <!-- Tab 1: Tiêu chí chung -->
                         <page string="I. Tiêu chí chung (30 điểm)">
                             <field name="criteria_line_ids"
-                                   readonly="state not in ('draft', 'submitted', 'dept_approved')">
+                                   readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="parent_criteria_id" optional="show" readonly="1"/>
                                     <field name="criteria_id" readonly="1"/>
                                     <field name="max_score" readonly="1"/>
                                     <field name="self_score"
-                                           readonly="parent.state != 'draft'"/>
+                                           readonly="parent.state != 'draft'"
+                                           string="NV tự chấm"/>
                                     <field name="dept_score"
-                                           readonly="parent.state != 'submitted'"
-                                           column_invisible="parent.state == 'draft'"/>
+                                           readonly="1"
+                                           string="TK/TP chấm"
+                                           column_invisible="parent.state == 'draft'"
+                                           optional="show"/>
                                     <field name="final_score" readonly="1"
-                                           decoration-bf="1"/>
+                                           decoration-bf="1"
+                                           string="Điểm cuối"/>
                                     <field name="note" optional="hide"/>
                                 </list>
                             </field>

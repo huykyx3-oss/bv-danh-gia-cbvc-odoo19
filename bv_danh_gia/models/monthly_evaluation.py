@@ -158,6 +158,23 @@ class MonthlyEvaluation(models.Model):
             else:
                 rec.classification = 'poor'
 
+    @api.onchange('employee_id', 'month', 'year', 'template_id')
+    def _onchange_populate_criteria(self):
+        """Auto-populate criteria lines when key fields are set (before save)."""
+        if not self.employee_id or not self.month or not self.year:
+            return
+        if self.criteria_line_ids:
+            return  # Already populated, don't overwrite
+        if self.template_id:
+            return  # Template-based criteria handled at create() time
+        # Use global master criteria (no DB write needed here)
+        criteria = self.env['bv.evaluation.criteria'].search([
+            ('category', '=', 'general'),
+            ('is_parent', '=', False),
+            ('active', '=', True),
+        ], order='sequence')
+        self.criteria_line_ids = [(0, 0, {'criteria_id': c.id}) for c in criteria]
+
     def _populate_criteria_lines(self):
         """Auto-populate criteria lines.
         Priority: template criteria → global master criteria."""

@@ -34,12 +34,10 @@
                 <filter name="active" string="Đang sử dụng"
                         domain="[('active','=',True)]"/>
                 <separator/>
-                <group expand="0" string="Nhóm theo">
-                    <filter name="group_by_category" string="Phân loại"
-                            context="{'group_by': 'category'}"/>
-                    <filter name="group_by_parent" string="Nhóm tiêu chí cha"
-                            context="{'group_by': 'parent_id'}"/>
-                </group>
+                <filter name="group_by_category" string="Nhóm theo: Phân loại"
+                        context="{'group_by': 'category'}"/>
+                <filter name="group_by_parent" string="Nhóm theo: Tiêu chí cha"
+                        context="{'group_by': 'parent_id'}"/>
             </search>
         </field>
     </record>

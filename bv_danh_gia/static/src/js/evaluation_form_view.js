@@ -41,7 +41,7 @@ export class EvaluationFormView extends Component {
         onWillStart(async () => {
             this.state.isDeptManager = await this.orm.call(
                 'res.users', 'has_group',
-                [session.uid, 'bv_danh_gia.group_evaluation_dept_manager'],
+                [[session.uid], 'bv_danh_gia.group_evaluation_dept_manager'],
             );
             if (this.evalId) {
                 await this.loadRecord();

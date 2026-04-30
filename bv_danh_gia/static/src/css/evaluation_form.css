@@ -438,3 +438,60 @@
 }
 .bv-dept-table tr:last-child td { border-bottom: none; }
 .bv-dept-table tr:hover td { background: #fafaf7; }
+
+/* ─── MANAGER TOGGLE ─── */
+.bv-manager-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 10px 0;
+  flex-wrap: wrap;
+}
+.bv-manager-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 2px solid var(--bv-navy-mid);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--bv-navy);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.bv-manager-toggle-btn:hover {
+  background: #e8eef7;
+}
+.bv-manager-toggle-btn.active {
+  background: var(--bv-navy);
+  color: #fff;
+  border-color: var(--bv-navy);
+}
+.bv-manager-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.bv-manager-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: #fff8e1;
+  border: 1px solid var(--bv-gold);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7a5e00;
+}
+
+/* ─── NUMBER INPUT FOR TASK PCT ─── */
+input[type="number"].bv-pct-input::-webkit-inner-spin-button,
+input[type="number"].bv-pct-input::-webkit-outer-spin-button {
+  opacity: 1;
+}
+input[type="number"]:focus {
+  border-color: var(--bv-navy-mid) !important;
+  box-shadow: 0 0 0 2px rgba(26,58,110,0.15);
+}

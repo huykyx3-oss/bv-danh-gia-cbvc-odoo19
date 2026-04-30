@@ -21,4 +21,3 @@ access_template_user,bv.evaluation.template.user,model_bv_evaluation_template,gr
 access_template_hr,bv.evaluation.template.hr,model_bv_evaluation_template,group_evaluation_hr,1,1,1,1
 access_template_criteria_user,bv.evaluation.template.criteria.user,model_bv_evaluation_template_criteria,group_evaluation_user,1,0,0,0
 access_template_criteria_hr,bv.evaluation.template.criteria.hr,model_bv_evaluation_template_criteria,group_evaluation_hr,1,1,1,1
-access_import_eval_wizard_hr,bv.import.evaluation.wizard.hr,model_bv_import_evaluation_wizard,group_evaluation_hr,1,1,1,1

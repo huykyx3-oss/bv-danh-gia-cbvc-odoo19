@@ -130,42 +130,15 @@ export class EvaluationFormView extends Component {
     _buildTaskFields() {
         const r = this.state.record;
         if (!r) return;
-        const fields = [
-            { key: 'pct_quantity', label: 'a) Số lượng thực hiện chỉ tiêu, nhiệm vụ chuyên môn', maxPts: 15, value: r.pct_quantity },
-            { key: 'pct_quality', label: 'b) Chất lượng kết quả thực hiện nhiệm vụ được giao', maxPts: 15, value: r.pct_quality },
-            { key: 'pct_progress', label: 'c) Tiến độ thực hiện', maxPts: 10, value: r.pct_progress },
+        // All 6 fields defined; managerOnly=true fields visible only when is_manager toggled
+        this.state.task_fields = [
+            { key: 'pct_quantity',    label: 'a) Số lượng thực hiện chỉ tiêu, nhiệm vụ chuyên môn', value: r.pct_quantity || 0,    managerOnly: false },
+            { key: 'pct_quality',     label: 'b) Chất lượng kết quả thực hiện nhiệm vụ được giao',  value: r.pct_quality || 0,     managerOnly: false },
+            { key: 'pct_progress',    label: 'c) Tiến độ thực hiện',                                  value: r.pct_progress || 0,    managerOnly: false },
+            { key: 'pct_field_result',label: 'd) Kết quả hoạt động lĩnh vực phụ trách',              value: r.pct_field_result || 0,managerOnly: true  },
+            { key: 'pct_organization',label: 'đ) Khả năng tổ chức triển khai thực hiện',             value: r.pct_organization || 0,managerOnly: true  },
+            { key: 'pct_team_cohesion',label: 'e) Năng lực tập hợp đoàn kết',                        value: r.pct_team_cohesion || 0,managerOnly: true },
         ];
-        if (r.is_manager) {
-            fields.push(
-                { key: 'pct_field_result', label: 'd) Kết quả hoạt động lĩnh vực phụ trách', maxPts: 10, value: r.pct_field_result },
-                { key: 'pct_organization', label: 'đ) Khả năng tổ chức triển khai thực hiện', maxPts: 10, value: r.pct_organization },
-                { key: 'pct_team_cohesion', label: 'e) Năng lực tập hợp đoàn kết', maxPts: 10, value: r.pct_team_cohesion },
-            );
-        }
-        this.state.task_fields = fields;
-    }
-
-    get taskFieldOptions() {
-        const taskOpts = {};
-        for (const f of this.state.task_fields) {
-            const opts = [];
-            const maxPts = f.maxPts;
-            if (maxPts === 15) {
-                opts.push({ score: 15, label: 'Đạt ≥ 100% — Vượt yêu cầu' });
-                opts.push({ score: 12, label: 'Đạt 90% – < 100%' });
-                opts.push({ score: 10, label: 'Đạt 80% – < 90%' });
-                opts.push({ score: 5, label: 'Đạt 70% – < 80%' });
-                opts.push({ score: 0, label: 'Đạt < 70%' });
-            } else if (maxPts === 10) {
-                opts.push({ score: 10, label: 'Xuất sắc, 100% đúng/vượt tiến độ' });
-                opts.push({ score: 8, label: 'Tốt, 90%+ đúng tiến độ' });
-                opts.push({ score: 5, label: 'Đạt, có công việc chậm tiến độ' });
-                opts.push({ score: 3, label: 'Hạn chế, chậm tiến độ kéo dài' });
-                opts.push({ score: 0, label: 'Không hoàn thành' });
-            }
-            taskOpts[f.key] = opts;
-        }
-        return taskOpts;
     }
 
     selectCriteriaScore(lineId, score) {
@@ -182,17 +155,25 @@ export class EvaluationFormView extends Component {
         this._recalculate();
     }
 
-    selectTaskScore(key, score) {
+    /** Replace radio-button selection: user types a percentage 0–100 */
+    updateTaskPct(key, rawValue) {
         if (this.state.record && this.state.record.state !== 'draft') return;
+        const numVal = Math.min(100, Math.max(0, parseFloat(rawValue) || 0));
         for (const f of this.state.task_fields) {
-            if (f.key === key) {
-                f.value = score;
-            }
+            if (f.key === key) f.value = numVal;
         }
         this._recalculate();
     }
 
+    /** Toggle "đánh giá với tư cách lãnh đạo / quản lý" */
+    toggleManager() {
+        if (this.state.record && this.state.record.state !== 'draft') return;
+        this.state.record.is_manager = !this.state.record.is_manager;
+        this._recalculate();
+    }
+
     _recalculate() {
+        // --- Phần I: tiêu chí chung ---
         let generalScore = 0;
         let filled = 0;
         let total = 0;
@@ -207,24 +188,28 @@ export class EvaluationFormView extends Component {
         }
         this.state.totalGeneral = Math.round(generalScore * 10) / 10;
 
-        let taskTotal = 0;
-        let taskCount = 0;
-        for (const f of this.state.task_fields) {
-            taskTotal += f.value || 0;
-            taskCount++;
-            total++;
-            if (f.value > 0) filled++;
-        }
-        this.state.totalTask = Math.round(taskTotal * 10) / 10;
-        this.state.totalScore = Math.round((generalScore + taskTotal) * 10) / 10;
+        // --- Phần II: KQTHNV ---
+        // Công thức: điểm KQTHNV = trung bình(pct_*) / 100 × 70
+        // Non-manager: 3 trường; Manager: 6 trường
+        const isManager = this.state.record && this.state.record.is_manager;
+        const activeFields = this.state.task_fields.filter(f => !f.managerOnly || isManager);
+        const pctSum = activeFields.reduce((sum, f) => sum + (parseFloat(f.value) || 0), 0);
+        const pctAvg = activeFields.length > 0 ? pctSum / activeFields.length : 0;
+        const taskScore = Math.round((pctAvg / 100 * 70) * 10) / 10;
+
+        this.state.totalTask = taskScore;
+        this.state.totalScore = Math.round((generalScore + taskScore) * 10) / 10;
+
+        total += activeFields.length;
+        filled += activeFields.filter(f => f.value > 0).length;
         this.state.filledCount = filled;
         this.state.totalCriteria = total;
 
         const s = this.state.totalScore;
-        if (s >= 90) this.state.classification = 'excellent';
+        if (s >= 90)      this.state.classification = 'excellent';
         else if (s >= 75) this.state.classification = 'good';
         else if (s >= 50) this.state.classification = 'fair';
-        else this.state.classification = 'poor';
+        else              this.state.classification = 'poor';
     }
 
     get classificationDisplay() {
@@ -278,9 +263,12 @@ export class EvaluationFormView extends Component {
                     lineWrites.push([1, c.lineId, { self_score: c.selectedScore || 0 }]);
                 }
             }
-            const vals = { criteria_line_ids: lineWrites };
+            const vals = {
+                criteria_line_ids: lineWrites,
+                is_manager: this.state.record.is_manager || false,
+            };
             for (const f of this.state.task_fields) {
-                vals[f.key] = f.value || 0;
+                vals[f.key] = parseFloat(f.value) || 0;
             }
             await this.orm.write('bv.monthly.evaluation', [this.evalId], vals);
             this.notification.add("Đã lưu nháp thành công!", { type: "success", sticky: false });

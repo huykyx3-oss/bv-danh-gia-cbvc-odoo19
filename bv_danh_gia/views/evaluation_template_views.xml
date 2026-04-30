@@ -53,13 +53,29 @@
 
                     <notebook>
                         <page string="Tiêu chí đánh giá">
+                            <div class="alert alert-info" style="margin-bottom:10px;">
+                                <strong>Hướng dẫn:</strong>
+                                <ul style="margin:4px 0 0 0;padding-left:18px;">
+                                    <li><strong>Thứ tự (Seq):</strong> Số nhỏ hiển thị lên đầu trong biểu mẫu. Dùng để sắp xếp tiêu chí theo đúng thứ tự yêu cầu.</li>
+                                    <li><strong>Tiêu chí cha:</strong> Nếu tiêu chí này thuộc một nhóm (ví dụ: "I. Phẩm chất chính trị"), hãy chọn nhóm đó ở đây. Để trống nếu đây là tiêu chí gốc.</li>
+                                    <li><strong>Chọn từ danh mục:</strong> Gõ để tìm và chọn tiêu chí có sẵn — hệ thống tự điền tên, mã và điểm. Bạn có thể chỉnh sửa lại sau.</li>
+                                    <li><strong>Trọng số điểm KQTHNV</strong> (ở tab trên): Điểm tối đa của Phần II "Kết quả thực hiện nhiệm vụ" — mặc định 70/100. Phần I (tiêu chí chung) chiếm phần còn lại (thường 30 điểm).</li>
+                                </ul>
+                            </div>
                             <field name="criteria_ids">
                                 <list editable="bottom">
-                                    <field name="sequence" widget="handle"/>
+                                    <field name="sequence" widget="handle" string="Seq"/>
+                                    <field name="source_criteria_id"
+                                           string="Chọn từ danh mục"
+                                           options='{"no_create": true}'
+                                           optional="show"
+                                           help="Chọn từ danh mục để tự động điền tên và điểm tối đa"/>
                                     <field name="code"/>
                                     <field name="name"/>
                                     <field name="parent_line_id"
-                                           domain="[('template_id', '=', parent.id)]"/>
+                                           string="Tiêu chí cha"
+                                           domain="[('template_id', '=', parent.id)]"
+                                           options='{"no_create": true}'/>
                                     <field name="max_score"/>
                                     <field name="note" optional="hide"/>
                                     <field name="synced_criteria_id" readonly="1" optional="hide"/>

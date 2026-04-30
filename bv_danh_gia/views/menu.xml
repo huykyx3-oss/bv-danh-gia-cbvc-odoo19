@@ -82,12 +82,6 @@
               action="action_ratio_check_wizard"
               sequence="30"/>
 
-    <menuitem id="menu_import_evaluation"
-              name="Nhập phiếu từ Excel"
-              parent="menu_reports"
-              action="action_import_evaluation_wizard"
-              sequence="40"/>
-
     <!-- Cấu hình -->
     <menuitem id="menu_config"
               name="Cấu hình"

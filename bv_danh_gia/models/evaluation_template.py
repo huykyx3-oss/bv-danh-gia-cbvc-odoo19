@@ -180,14 +180,43 @@ class EvaluationTemplateCriteria(models.Model):
     template_id = fields.Many2one(
         'bv.evaluation.template', string='Biểu mẫu',
         required=True, ondelete='cascade')
+
+    # Helper: pick from master catalog to auto-fill name/code/score
+    source_criteria_id = fields.Many2one(
+        'bv.evaluation.criteria',
+        string='Chọn từ danh mục',
+        help='Chọn tiêu chí có sẵn trong danh mục để tự động điền tên và điểm tối đa. '
+             'Bạn vẫn có thể chỉnh sửa sau khi chọn.',
+        store=False)
+
     name = fields.Char(string='Tên tiêu chí', required=True)
     code = fields.Char(string='Mã')
     parent_line_id = fields.Many2one(
-        'bv.evaluation.template.criteria', string='Tiêu chí cha',
-        ondelete='cascade')
+        'bv.evaluation.template.criteria', string='Tiêu chí cha (trong biểu mẫu)',
+        domain="[('template_id', '=', template_id), ('id', '!=', id)]",
+        ondelete='cascade',
+        help='Chọn nhóm tiêu chí cha trong cùng biểu mẫu này. '
+             'Để trống nếu đây là tiêu chí gốc/nhóm.')
     max_score = fields.Float(string='Điểm tối đa', required=True)
     sequence = fields.Integer(string='Thứ tự', default=10)
     note = fields.Text(string='Hướng dẫn chấm')
     synced_criteria_id = fields.Many2one(
         'bv.evaluation.criteria', string='Tiêu chí đã đồng bộ',
         readonly=True)
+
+    @api.onchange('source_criteria_id')
+    def _onchange_source_criteria(self):
+        if not self.source_criteria_id:
+            return
+        src = self.source_criteria_id
+        self.name = src.name
+        self.code = src.code or ''
+        self.max_score = src.max_score
+        self.note = src.note or ''
+        # If the source has a parent, try to find matching parent in this template
+        if src.parent_id:
+            parent_match = self.template_id.criteria_ids.filtered(
+                lambda c: c.name == src.parent_id.name and not c.parent_line_id
+            )
+            if parent_match:
+                self.parent_line_id = parent_match[0]

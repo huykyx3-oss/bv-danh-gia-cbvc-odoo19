@@ -125,42 +125,71 @@
                     <!-- ═══ PHẦN II: KẾT QUẢ THỰC HIỆN NHIỆM VỤ ═══ -->
                     <div class="bv-part-divider"><span>PHẦN II — KẾT QUẢ THỰC HIỆN NHIỆM VỤ (70 điểm)</span></div>
 
+                    <!-- Toggle: chế độ lãnh đạo / quản lý -->
+                    <div class="bv-manager-toggle-wrap">
+                        <button t-on-click="toggleManager"
+                                t-att-class="'bv-manager-toggle-btn' + (state.record and state.record.is_manager ? ' active' : '')"
+                                t-att-disabled="isReadonly">
+                            <i t-att-class="'fa ' + (state.record and state.record.is_manager ? 'fa-check-square-o' : 'fa-square-o')"/>
+                            <span style="margin-left:8px;">Đánh giá với tư cách lãnh đạo / Quản lý</span>
+                        </button>
+                        <span t-if="state.record and state.record.is_manager"
+                              class="bv-manager-active-badge">
+                            <i class="fa fa-star"/> Đang bật — hiển thị thêm 3 tiêu chí lãnh đạo
+                        </span>
+                    </div>
+
                     <div class="bv-card">
                         <div class="bv-section-header">
                             <span class="bv-section-badge">Phần II</span>
                             <span class="bv-section-title">Kết quả thực hiện nhiệm vụ</span>
-                            <span class="bv-section-maxpts">Tối đa: 70 điểm</span>
+                            <span class="bv-section-maxpts">Tối đa: 70 điểm · Nhập % hoàn thành</span>
+                        </div>
+
+                        <!-- Formula note -->
+                        <div style="background:#f5f3ee;padding:10px 24px;border-bottom:1px solid #eceae4;font-size:12px;color:#6b6760;">
+                            <i class="fa fa-info-circle"/> Điểm KQTHNV = Trung bình cộng các % nhập vào ÷ 100 × 70.
+                            Ví dụ: nhập 80% / 90% / 75% → trung bình 81.67% → điểm = 81.67 ÷ 100 × 70 = <strong>57.2 điểm</strong>.
                         </div>
 
                         <t t-foreach="state.task_fields" t-as="tf" t-key="tf.key">
-                            <div style="border-bottom:1px solid #eceae4;padding:20px 24px;">
-                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#0f2044;color:white;border-radius:6px;font-size:12px;font-weight:700;">
-                                        <t t-esc="tf.label.charAt(0)"/>
-                                    </span>
-                                    <span style="font-weight:600;font-size:13.5px;flex:1;"><t t-esc="tf.label"/></span>
-                                    <span style="font-size:12px;color:#6b6760;background:#eceae4;padding:2px 8px;border-radius:10px;">
-                                        Tối đa: <t t-esc="tf.maxPts"/> điểm
-                                    </span>
-                                    <span style="font-weight:700;color:#c9a84c;font-size:14px;">
-                                        <t t-if="tf.value > 0"><t t-esc="tf.value"/> đ</t>
-                                        <t t-else="">—</t>
-                                    </span>
-                                </div>
-                                <div style="display:flex;flex-direction:column;gap:8px;">
-                                    <t t-foreach="taskFieldOptions[tf.key] || []" t-as="opt" t-key="opt.score">
-                                        <div t-att-class="'bv-option-item' + (tf.value === opt.score ? ' selected' : '')"
-                                             t-on-click="() => this.selectTaskScore(tf.key, opt.score)">
-                                            <div class="bv-radio-dot"/>
-                                            <div class="bv-option-content">
-                                                <div class="bv-option-level"><t t-esc="opt.label"/></div>
-                                            </div>
-                                            <span class="bv-option-score-badge"><t t-esc="opt.score"/> đ</span>
+                            <t t-if="!tf.managerOnly or (state.record and state.record.is_manager)">
+                                <div t-att-style="'border-bottom:1px solid #eceae4;padding:16px 24px;' + (tf.managerOnly ? 'background:#fafaf7;' : '')">
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                                        <span t-if="tf.managerOnly"
+                                              style="font-size:10px;background:#c9a84c;color:#fff;padding:2px 7px;border-radius:10px;font-weight:700;white-space:nowrap;">
+                                            Lãnh đạo
+                                        </span>
+                                        <span style="font-weight:600;font-size:13.5px;flex:1;"><t t-esc="tf.label"/></span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:12px;">
+                                        <input type="number" min="0" max="100" step="0.5"
+                                               t-att-value="tf.value"
+                                               t-att-disabled="isReadonly ? 'disabled' : undefined"
+                                               t-on-input="(ev) => this.updateTaskPct(tf.key, ev.target.value)"
+                                               style="width:90px;padding:7px 10px;border:1.5px solid #d8d4cc;border-radius:8px;font-size:15px;text-align:center;outline:none;"/>
+                                        <span style="font-size:13px;color:#6b6760;font-weight:600;">%</span>
+                                        <div style="flex:1;background:#eceae4;border-radius:6px;height:8px;overflow:hidden;">
+                                            <div t-att-style="'background:#0f2044;height:100%;width:' + Math.min(tf.value || 0, 100) + '%;transition:width 0.3s;'"/>
                                         </div>
-                                    </t>
+                                        <span style="font-weight:700;color:#c9a84c;font-size:14px;min-width:48px;text-align:right;">
+                                            <t t-if="tf.value"><t t-esc="tf.value"/>%</t>
+                                            <t t-else="">—</t>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
+                            </t>
                         </t>
+
+                        <!-- Điểm KQTHNV tổng hợp -->
+                        <div style="padding:14px 24px;background:#f5f3ee;display:flex;align-items:center;gap:12px;border-top:2px solid #c9a84c;">
+                            <span style="flex:1;font-weight:600;font-size:13px;color:#6b6760;">
+                                Điểm KQTHNV (tính theo công thức):
+                            </span>
+                            <span style="font-size:18px;font-weight:700;color:#0f2044;">
+                                <t t-esc="state.totalTask"/> <span style="font-size:13px;color:#6b6760;">/ 70 điểm</span>
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Action bar -->

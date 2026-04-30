@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Tree View -->
+    <!-- Tree View — import enabled -->
     <record id="view_evaluation_criteria_tree" model="ir.ui.view">
         <field name="name">bv.evaluation.criteria.tree</field>
         <field name="model">bv.evaluation.criteria</field>
         <field name="arch" type="xml">
-            <list>
+            <list import="1" export_xlsx="1">
                 <field name="sequence" widget="handle"/>
                 <field name="code"/>
                 <field name="name"/>
@@ -14,6 +14,33 @@
                 <field name="max_score"/>
                 <field name="active"/>
             </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_evaluation_criteria_search" model="ir.ui.view">
+        <field name="name">bv.evaluation.criteria.search</field>
+        <field name="model">bv.evaluation.criteria</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Tên tiêu chí"/>
+                <field name="code"/>
+                <filter name="general" string="Tiêu chí chung"
+                        domain="[('category','=','general')]"/>
+                <filter name="task" string="Kết quả nhiệm vụ"
+                        domain="[('category','=','task_result')]"/>
+                <filter name="leaf" string="Tiêu chí lá (có thể chấm điểm)"
+                        domain="[('is_parent','=',False)]"/>
+                <filter name="active" string="Đang sử dụng"
+                        domain="[('active','=',True)]"/>
+                <separator/>
+                <group expand="0" string="Nhóm theo">
+                    <filter name="group_by_category" string="Phân loại"
+                            context="{'group_by': 'category'}"/>
+                    <filter name="group_by_parent" string="Nhóm tiêu chí cha"
+                            context="{'group_by': 'parent_id'}"/>
+                </group>
+            </search>
         </field>
     </record>
 

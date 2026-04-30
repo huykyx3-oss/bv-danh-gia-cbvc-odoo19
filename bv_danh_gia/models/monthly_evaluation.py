@@ -86,6 +86,16 @@ class MonthlyEvaluation(models.Model):
         string='Điểm tiêu chí KQTHNV', compute='_compute_task_score',
         store=True, tracking=True)
 
+    # --- Trọng số điểm (lấy từ biểu mẫu, mặc định 30/70) ---
+    general_score_max = fields.Float(
+        string='Điểm tối đa tiêu chí chung',
+        compute='_compute_score_maxes', store=True,
+        help='Lấy từ biểu mẫu đánh giá; mặc định 30 nếu không có biểu mẫu')
+    task_score_max = fields.Float(
+        string='Điểm tối đa KQTHNV',
+        compute='_compute_score_maxes', store=True,
+        help='Lấy từ biểu mẫu đánh giá; mặc định 70 nếu không có biểu mẫu')
+
     # --- Tổng điểm ---
     total_score = fields.Float(
         string='Tổng điểm', compute='_compute_total_score',
@@ -127,18 +137,35 @@ class MonthlyEvaluation(models.Model):
     @api.depends(
         'is_manager',
         'pct_quantity', 'pct_quality', 'pct_progress',
-        'pct_field_result', 'pct_organization', 'pct_team_cohesion')
+        'pct_field_result', 'pct_organization', 'pct_team_cohesion',
+        'task_score_max')
     def _compute_task_score(self):
         for rec in self:
+            max_pts = rec.task_score_max or 70.0
             if rec.is_manager:
                 total_pct = (
                     rec.pct_quantity + rec.pct_quality + rec.pct_progress
                     + rec.pct_field_result + rec.pct_organization + rec.pct_team_cohesion
                 )
-                rec.task_score = (total_pct / 6.0) * 70.0 / 100.0
+                rec.task_score = (total_pct / 6.0) * max_pts / 100.0
             else:
                 total_pct = rec.pct_quantity + rec.pct_quality + rec.pct_progress
-                rec.task_score = (total_pct / 3.0) * 70.0 / 100.0
+                rec.task_score = (total_pct / 3.0) * max_pts / 100.0
+
+    @api.depends('template_id', 'template_id.task_score_weight',
+                 'template_id.total_general_score')
+    def _compute_score_maxes(self):
+        for rec in self:
+            if rec.template_id:
+                rec.task_score_max = rec.template_id.task_score_weight or 70.0
+                # Prefer the template's explicit general total, else 100 - task
+                rec.general_score_max = (
+                    rec.template_id.total_general_score
+                    or (100.0 - rec.task_score_max)
+                )
+            else:
+                rec.general_score_max = 30.0
+                rec.task_score_max = 70.0
 
     @api.depends('general_score', 'task_score')
     def _compute_total_score(self):
@@ -292,13 +319,43 @@ class MonthlyEvaluation(models.Model):
                             'warning')
 
     def action_open_custom_form(self):
-        """Open the custom evaluation form view."""
+        """Open the custom evaluation form view.
+
+        Self-heals before opening:
+        1. Drops any criteria_line records with NULL criteria_id (orphans
+           from older module versions or partial saves).
+        2. Populates lines from template / global catalog if currently empty.
+        """
         self.ensure_one()
+        bad_lines = self.criteria_line_ids.filtered(lambda l: not l.criteria_id)
+        if bad_lines:
+            bad_lines.sudo().unlink()
+        if not self.criteria_line_ids:
+            self._populate_criteria_lines()
         return {
             'type': 'ir.actions.client',
             'tag': 'bv_danh_gia.evaluation_form_custom',
             'name': f'Phiếu đánh giá - {self.display_name}',
             'context': {'eval_id': self.id, 'active_id': self.id},
+        }
+
+    def action_sanitize_lines(self):
+        """Manual cleanup button: remove orphan criteria lines and re-populate."""
+        for rec in self:
+            bad = rec.criteria_line_ids.filtered(lambda l: not l.criteria_id)
+            if bad:
+                bad.sudo().unlink()
+            if not rec.criteria_line_ids:
+                rec._populate_criteria_lines()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Đã làm sạch',
+                'message': 'Đã xóa các dòng tiêu chí lỗi và tải lại từ biểu mẫu.',
+                'type': 'success',
+                'sticky': False,
+            },
         }
 
     # --- Export actions ---

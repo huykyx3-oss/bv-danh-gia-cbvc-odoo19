@@ -495,3 +495,70 @@ input[type="number"]:focus {
   border-color: var(--bv-navy-mid) !important;
   box-shadow: 0 0 0 2px rgba(26,58,110,0.15);
 }
+
+/* ─── DUAL-SCORE LAYOUT (self + dept side by side) ─── */
+.bv-dual-score-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 10px 0;
+}
+@media (min-width: 992px) {
+  .bv-dual-score-row { grid-template-columns: 2fr 1fr; }
+}
+.bv-dual-score-col {
+  background: #fff;
+  border: 1px solid var(--bv-gray-light);
+  border-radius: 8px;
+  padding: 10px;
+}
+.bv-dual-score-col:nth-child(2) {
+  background: #fffbe9;
+  border-color: var(--bv-gold);
+}
+.bv-dual-score-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bv-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bv-dept-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.bv-dept-input {
+  width: 90px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--bv-gold);
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--bv-navy);
+  background: #fff;
+  outline: none;
+}
+.bv-dept-input:disabled {
+  background: #f5f3ee;
+  color: var(--bv-text-muted);
+  cursor: not-allowed;
+}
+.bv-dept-input-suffix {
+  font-size: 13px;
+  color: var(--bv-text-muted);
+  font-weight: 600;
+}
+
+/* Disabled option items (when readonly) */
+.bv-option-item.disabled {
+  opacity: 0.65;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}

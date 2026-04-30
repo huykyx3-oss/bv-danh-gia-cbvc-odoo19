@@ -35,8 +35,13 @@
                             name="action_export_docx" class="btn-secondary"
                             icon="fa-file-word-o"/>
                     <button string="Giao diện đánh giá mới" type="object"
-                            name="action_open_custom_form" class="btn-secondary"
+                            name="action_open_custom_form" class="btn-primary"
                             icon="fa-paint-brush"/>
+                    <button string="Sửa lỗi tiêu chí" type="object"
+                            name="action_sanitize_lines" class="btn-secondary"
+                            icon="fa-magic"
+                            help="Xóa các dòng tiêu chí lỗi và tải lại từ biểu mẫu/danh mục"
+                            confirm="Sẽ xóa các dòng tiêu chí không hợp lệ và tải lại từ biểu mẫu/danh mục. Tiếp tục?"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,submitted,dept_approved,hr_reviewed,approved"/>
                 </header>

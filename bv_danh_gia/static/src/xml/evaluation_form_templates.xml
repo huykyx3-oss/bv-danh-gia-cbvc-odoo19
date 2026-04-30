@@ -80,8 +80,20 @@
                         </div>
                     </div>
 
+                    <!-- Banner cho trưởng khoa khi chấm lại -->
+                    <t t-if="state.canEditDept">
+                        <div style="background:#fff8e1;border-left:4px solid #c9a84c;padding:14px 18px;margin-bottom:14px;border-radius:8px;">
+                            <strong style="color:#7a5e00;"><i class="fa fa-user-md"/> Bạn đang chấm với tư cách Trưởng khoa/Phòng.</strong>
+                            <div style="font-size:13px;color:#5a4500;margin-top:4px;">
+                                Cột bên phải mỗi tiêu chí là điểm bạn chấm cho nhân viên. Sau khi xong, bấm <strong>"Duyệt &amp; chuyển lên TCCB"</strong>.
+                            </div>
+                        </div>
+                    </t>
+
                     <!-- ═══ PHẦN I: TIÊU CHÍ CHUNG ═══ -->
-                    <div class="bv-part-divider"><span>PHẦN I — TIÊU CHÍ CHUNG (30 điểm)</span></div>
+                    <div class="bv-part-divider">
+                        <span>PHẦN I — TIÊU CHÍ CHUNG (<t t-esc="state.generalMax"/> điểm)</span>
+                    </div>
 
                     <t t-foreach="state.criteria_groups" t-as="group" t-key="group.id">
                         <div class="bv-card">
@@ -98,22 +110,53 @@
                                         <div class="bv-subsection-title"><t t-esc="criterion.name"/></div>
                                         <div class="bv-subsection-pts"><t t-esc="criterion.maxScore"/> điểm</div>
                                         <div class="bv-subsection-score">
-                                            <t t-if="criterion.selectedScore > 0"><t t-esc="criterion.selectedScore"/> đ</t>
+                                            <t t-if="criterion.selectedScore > 0"><t t-esc="criterion.selectedScore"/> đ tự chấm</t>
                                             <t t-else="">—</t>
                                         </div>
                                     </div>
-                                    <div class="bv-criteria-options">
-                                        <t t-foreach="criterion.options" t-as="opt" t-key="opt.score">
-                                            <div t-att-class="'bv-option-item' + (criterion.selectedScore === opt.score ? ' selected' : '')"
-                                                 t-on-click="() => this.selectCriteriaScore(criterion.lineId, opt.score)">
-                                                <div class="bv-radio-dot"/>
-                                                <div class="bv-option-content">
-                                                    <div class="bv-option-level"><t t-esc="opt.label"/></div>
-                                                    <t t-if="opt.desc">
-                                                        <div class="bv-option-desc"><t t-esc="opt.desc"/></div>
-                                                    </t>
+
+                                    <div class="bv-dual-score-row">
+                                        <!-- Self-score column -->
+                                        <div class="bv-dual-score-col">
+                                            <div class="bv-dual-score-label">
+                                                <i class="fa fa-user"/> Nhân viên tự chấm
+                                            </div>
+                                            <div class="bv-criteria-options">
+                                                <t t-foreach="criterion.options" t-as="opt" t-key="opt.score">
+                                                    <div t-att-class="'bv-option-item' + (criterion.selectedScore === opt.score ? ' selected' : '') + (state.record.state !== 'draft' ? ' disabled' : '')"
+                                                         t-on-click="() => state.record.state === 'draft' &amp;&amp; this.selectCriteriaScore(criterion.lineId, opt.score)">
+                                                        <div class="bv-radio-dot"/>
+                                                        <div class="bv-option-content">
+                                                            <div class="bv-option-level"><t t-esc="opt.label"/></div>
+                                                            <t t-if="opt.desc">
+                                                                <div class="bv-option-desc"><t t-esc="opt.desc"/></div>
+                                                            </t>
+                                                        </div>
+                                                        <span class="bv-option-score-badge"><t t-esc="opt.score"/> đ</span>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </div>
+
+                                        <!-- Dept-score column (visible to dept managers / readonly otherwise) -->
+                                        <t t-if="state.canEditDept or (criterion.deptScore and criterion.deptScore > 0)">
+                                            <div class="bv-dual-score-col">
+                                                <div class="bv-dual-score-label">
+                                                    <i class="fa fa-user-md"/> Trưởng khoa/Phòng chấm
                                                 </div>
-                                                <span class="bv-option-score-badge"><t t-esc="opt.score"/> đ</span>
+                                                <div class="bv-dept-input-wrap">
+                                                    <input type="number" min="0" t-att-max="criterion.maxScore" step="0.5"
+                                                           t-att-value="criterion.deptScore"
+                                                           t-att-disabled="state.canEditDept ? undefined : 'disabled'"
+                                                           t-on-input="(ev) => this.updateDeptScore(criterion.lineId, ev.target.value, criterion.maxScore)"
+                                                           class="bv-dept-input"/>
+                                                    <span class="bv-dept-input-suffix">/ <t t-esc="criterion.maxScore"/> đ</span>
+                                                </div>
+                                                <t t-if="!state.canEditDept">
+                                                    <div style="font-size:11px;color:#6b6760;margin-top:4px;font-style:italic;">
+                                                        Chỉ trưởng khoa được sửa
+                                                    </div>
+                                                </t>
                                             </div>
                                         </t>
                                     </div>
@@ -123,7 +166,9 @@
                     </t>
 
                     <!-- ═══ PHẦN II: KẾT QUẢ THỰC HIỆN NHIỆM VỤ ═══ -->
-                    <div class="bv-part-divider"><span>PHẦN II — KẾT QUẢ THỰC HIỆN NHIỆM VỤ (70 điểm)</span></div>
+                    <div class="bv-part-divider">
+                        <span>PHẦN II — KẾT QUẢ THỰC HIỆN NHIỆM VỤ (<t t-esc="state.taskMax"/> điểm)</span>
+                    </div>
 
                     <!-- Toggle: chế độ lãnh đạo / quản lý -->
                     <div class="bv-manager-toggle-wrap">
@@ -187,7 +232,7 @@
                                 Điểm KQTHNV (tính theo công thức):
                             </span>
                             <span style="font-size:18px;font-weight:700;color:#0f2044;">
-                                <t t-esc="state.totalTask"/> <span style="font-size:13px;color:#6b6760;">/ 70 điểm</span>
+                                <t t-esc="state.totalTask"/> <span style="font-size:13px;color:#6b6760;">/ <t t-esc="state.taskMax"/> điểm</span>
                             </span>
                         </div>
                     </div>
@@ -198,7 +243,7 @@
                                 t-on-click="openStandardForm">
                             <i class="fa fa-th-list"/> Xem dạng chuẩn
                         </button>
-                        <t t-if="!isReadonly">
+                        <t t-if="state.record and state.record.state === 'draft'">
                             <button class="btn" style="background:transparent;border:1.5px solid #d8d4cc;color:#1e1e1e;padding:11px 24px;border-radius:8px;font-weight:600;cursor:pointer;"
                                     t-on-click="saveDraft" t-att-disabled="state.saving">
                                 <i class="fa fa-save"/> Lưu nháp
@@ -206,6 +251,16 @@
                             <button class="btn" style="background:#2d7a4f;color:white;padding:11px 24px;border-radius:8px;font-weight:600;border:none;cursor:pointer;"
                                     t-on-click="submitForm" t-att-disabled="state.saving">
                                 <i class="fa fa-paper-plane"/> Nộp phiếu đánh giá
+                            </button>
+                        </t>
+                        <t t-elif="state.canEditDept">
+                            <button class="btn" style="background:transparent;border:1.5px solid #d8d4cc;color:#1e1e1e;padding:11px 24px;border-radius:8px;font-weight:600;cursor:pointer;"
+                                    t-on-click="saveDraft" t-att-disabled="state.saving">
+                                <i class="fa fa-save"/> Lưu điểm chấm
+                            </button>
+                            <button class="btn" style="background:#c9a84c;color:white;padding:11px 24px;border-radius:8px;font-weight:600;border:none;cursor:pointer;"
+                                    t-on-click="deptApprove" t-att-disabled="state.saving">
+                                <i class="fa fa-check"/> Duyệt &amp; chuyển lên TCCB
                             </button>
                         </t>
                         <t t-else="">
@@ -237,7 +292,7 @@
                             <div style="flex:1;">
                                 <div style="display:flex;justify-content:space-between;">
                                     <span class="bv-score-row-label">Phần I – Tiêu chí chung</span>
-                                    <span class="bv-score-row-val"><t t-esc="state.totalGeneral"/><span class="bv-of"> / 30</span></span>
+                                    <span class="bv-score-row-val"><t t-esc="state.totalGeneral"/><span class="bv-of"> / <t t-esc="state.generalMax"/></span></span>
                                 </div>
                                 <div class="bv-progress-bar"><div class="bv-progress-fill" t-att-style="'width:' + generalPct + '%'"/></div>
                             </div>
@@ -256,7 +311,7 @@
                             <div style="flex:1;">
                                 <div style="display:flex;justify-content:space-between;">
                                     <span class="bv-score-row-label">Phần II – Kết quả nhiệm vụ</span>
-                                    <span class="bv-score-row-val"><t t-esc="state.totalTask"/><span class="bv-of"> / 70</span></span>
+                                    <span class="bv-score-row-val"><t t-esc="state.totalTask"/><span class="bv-of"> / <t t-esc="state.taskMax"/></span></span>
                                 </div>
                                 <div class="bv-progress-bar"><div class="bv-progress-fill" t-att-style="'width:' + taskPct + '%'"/></div>
                             </div>

@@ -23,15 +23,25 @@ export class EvaluationFormView extends Component {
             criteria_groups: [],
             task_fields: [],
             scores: {},
+            deptScores: {},
             totalGeneral: 0,
+            totalDeptGeneral: 0,
             totalTask: 0,
             totalScore: 0,
+            generalMax: 30,
+            taskMax: 70,
             classification: '',
             filledCount: 0,
             totalCriteria: 0,
+            isDeptManager: false,
+            canEditDept: false,
         });
 
         onWillStart(async () => {
+            this.state.isDeptManager = await this.orm.call(
+                'res.users', 'has_group',
+                [['bv_danh_gia.group_evaluation_dept_manager']],
+            );
             if (this.evalId) {
                 await this.loadRecord();
             } else {
@@ -45,12 +55,17 @@ export class EvaluationFormView extends Component {
         const [record] = await this.orm.read('bv.monthly.evaluation', [this.evalId], [
             'employee_id', 'department_id', 'job_id', 'month', 'year',
             'is_manager', 'state', 'general_score', 'task_score', 'total_score',
+            'general_score_max', 'task_score_max',
             'classification', 'strengths', 'weaknesses', 'authority_comment',
             'pct_quantity', 'pct_quality', 'pct_progress',
             'pct_field_result', 'pct_organization', 'pct_team_cohesion',
             'criteria_line_ids', 'display_name',
         ]);
         this.state.record = record;
+        this.state.generalMax = record.general_score_max || 30;
+        this.state.taskMax = record.task_score_max || 70;
+        // Manager can score only when state is 'submitted' (waiting for dept approval)
+        this.state.canEditDept = this.state.isDeptManager && record.state === 'submitted';
 
         const lineIds = record.criteria_line_ids;
         if (lineIds && lineIds.length > 0) {
@@ -88,6 +103,7 @@ export class EvaluationFormView extends Component {
                 g.maxScore += line.max_score;
                 g.currentScore += line.final_score;
                 this.state.scores[line.id] = line.self_score;
+                this.state.deptScores[line.id] = line.dept_score;
             }
             this.state.criteria_groups = Object.values(groups);
         }
@@ -155,6 +171,19 @@ export class EvaluationFormView extends Component {
         this._recalculate();
     }
 
+    /** Dept manager scores a criteria line (max bounded by line.maxScore) */
+    updateDeptScore(lineId, rawValue, maxScore) {
+        if (!this.state.canEditDept) return;
+        const v = Math.min(maxScore, Math.max(0, parseFloat(rawValue) || 0));
+        this.state.deptScores[lineId] = v;
+        for (const g of this.state.criteria_groups) {
+            for (const c of g.criteria) {
+                if (c.lineId === lineId) c.deptScore = v;
+            }
+        }
+        this._recalculate();
+    }
+
     /** Replace radio-button selection: user types a percentage 0–100 */
     updateTaskPct(key, rawValue) {
         if (this.state.record && this.state.record.state !== 'draft') return;
@@ -175,6 +204,7 @@ export class EvaluationFormView extends Component {
     _recalculate() {
         // --- Phần I: tiêu chí chung ---
         let generalScore = 0;
+        let deptGeneral = 0;
         let filled = 0;
         let total = 0;
         for (const g of this.state.criteria_groups) {
@@ -182,23 +212,29 @@ export class EvaluationFormView extends Component {
             for (const c of g.criteria) {
                 g.currentScore += c.selectedScore || 0;
                 generalScore += c.selectedScore || 0;
+                deptGeneral += c.deptScore || 0;
                 total++;
                 if (c.selectedScore > 0) filled++;
             }
         }
         this.state.totalGeneral = Math.round(generalScore * 10) / 10;
+        this.state.totalDeptGeneral = Math.round(deptGeneral * 10) / 10;
 
         // --- Phần II: KQTHNV ---
-        // Công thức: điểm KQTHNV = trung bình(pct_*) / 100 × 70
+        // Công thức: điểm KQTHNV = trung bình(pct_*) / 100 × taskMax
         // Non-manager: 3 trường; Manager: 6 trường
         const isManager = this.state.record && this.state.record.is_manager;
         const activeFields = this.state.task_fields.filter(f => !f.managerOnly || isManager);
         const pctSum = activeFields.reduce((sum, f) => sum + (parseFloat(f.value) || 0), 0);
         const pctAvg = activeFields.length > 0 ? pctSum / activeFields.length : 0;
-        const taskScore = Math.round((pctAvg / 100 * 70) * 10) / 10;
+        const taskScore = Math.round((pctAvg / 100 * (this.state.taskMax || 70)) * 10) / 10;
 
         this.state.totalTask = taskScore;
-        this.state.totalScore = Math.round((generalScore + taskScore) * 10) / 10;
+        // Total score uses dept score if any criteria has dept score (review phase),
+        // otherwise self score.
+        const useDept = deptGeneral > 0 && this.state.record && this.state.record.state !== 'draft';
+        const finalGeneral = useDept ? deptGeneral : generalScore;
+        this.state.totalScore = Math.round((finalGeneral + taskScore) * 10) / 10;
 
         total += activeFields.length;
         filled += activeFields.filter(f => f.value > 0).length;
@@ -228,11 +264,13 @@ export class EvaluationFormView extends Component {
     }
 
     get generalPct() {
-        return Math.round(this.state.totalGeneral / 30 * 100);
+        const max = this.state.generalMax || 30;
+        return Math.min(100, Math.round(this.state.totalGeneral / max * 100));
     }
 
     get taskPct() {
-        return Math.round(this.state.totalTask / 70 * 100);
+        const max = this.state.taskMax || 70;
+        return Math.min(100, Math.round(this.state.totalTask / max * 100));
     }
 
     get scoreDeg() {
@@ -240,7 +278,9 @@ export class EvaluationFormView extends Component {
     }
 
     get isReadonly() {
-        return !this.state.record || this.state.record.state !== 'draft';
+        if (!this.state.record) return true;
+        // Employee can edit when draft. Dept manager can edit when state is submitted.
+        return this.state.record.state !== 'draft' && !this.state.canEditDept;
     }
 
     get monthLabel() {
@@ -260,22 +300,49 @@ export class EvaluationFormView extends Component {
             const lineWrites = [];
             for (const g of this.state.criteria_groups) {
                 for (const c of g.criteria) {
-                    lineWrites.push([1, c.lineId, { self_score: c.selectedScore || 0 }]);
+                    const lineVals = {};
+                    if (this.state.record.state === 'draft') {
+                        lineVals.self_score = c.selectedScore || 0;
+                    }
+                    if (this.state.canEditDept) {
+                        lineVals.dept_score = c.deptScore || 0;
+                    }
+                    if (Object.keys(lineVals).length > 0) {
+                        lineWrites.push([1, c.lineId, lineVals]);
+                    }
                 }
             }
-            const vals = {
-                criteria_line_ids: lineWrites,
-                is_manager: this.state.record.is_manager || false,
-            };
-            for (const f of this.state.task_fields) {
-                vals[f.key] = parseFloat(f.value) || 0;
+            const vals = {};
+            if (lineWrites.length > 0) {
+                vals.criteria_line_ids = lineWrites;
+            }
+            if (this.state.record.state === 'draft') {
+                vals.is_manager = this.state.record.is_manager || false;
+                for (const f of this.state.task_fields) {
+                    vals[f.key] = parseFloat(f.value) || 0;
+                }
+            }
+            if (Object.keys(vals).length === 0) {
+                this.state.saving = false;
+                return;
             }
             await this.orm.write('bv.monthly.evaluation', [this.evalId], vals);
-            this.notification.add("Đã lưu nháp thành công!", { type: "success", sticky: false });
+            this.notification.add("Đã lưu thành công!", { type: "success", sticky: false });
         } catch (e) {
             this.notification.add("Lỗi khi lưu: " + (e.message || ''), { type: "danger" });
         }
         this.state.saving = false;
+    }
+
+    async deptApprove() {
+        await this.saveDraft();
+        try {
+            await this.orm.call('bv.monthly.evaluation', 'action_dept_approve', [this.evalId]);
+            this.notification.add("Đã duyệt và chuyển lên TCCB.", { type: "success" });
+            await this.loadRecord();
+        } catch (e) {
+            this.notification.add("Lỗi: " + (e.message || ''), { type: "danger" });
+        }
     }
 
     async submitForm() {

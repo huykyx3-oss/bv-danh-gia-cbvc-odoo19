@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
 
 <t t-name="bv_danh_gia.EvaluationFormView">
-    <div style="background:#f5f3ee;min-height:100vh;padding:24px;">
+    <div class="bv-eval-form-root">
         <t t-if="state.loading">
             <div style="text-align:center;padding:60px;">
                 <i class="fa fa-spinner fa-spin fa-3x" style="color:#c9a84c;"/>

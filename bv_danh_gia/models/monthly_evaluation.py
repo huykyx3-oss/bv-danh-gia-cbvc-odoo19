@@ -159,21 +159,70 @@ class MonthlyEvaluation(models.Model):
                 rec.classification = 'poor'
 
     def _populate_criteria_lines(self):
-        """Auto-populate criteria lines from master data on creation."""
+        """Auto-populate criteria lines.
+        Priority: template criteria → global master criteria."""
         CriteriaLine = self.env['bv.evaluation.criteria.line']
-        criteria = self.env['bv.evaluation.criteria'].search([
-            ('category', '=', 'general'),
-            ('is_parent', '=', False),
-            ('active', '=', True),
-        ])
         for rec in self:
-            existing = rec.criteria_line_ids.mapped('criteria_id')
-            for c in criteria:
-                if c not in existing:
-                    CriteriaLine.create({
-                        'evaluation_id': rec.id,
-                        'criteria_id': c.id,
-                    })
+            if rec.template_id and rec.template_id.criteria_ids:
+                # Use template criteria — map parent lines to bv.evaluation.criteria
+                self._populate_from_template(rec, CriteriaLine)
+            else:
+                # Fallback: use global master criteria
+                criteria = self.env['bv.evaluation.criteria'].search([
+                    ('category', '=', 'general'),
+                    ('is_parent', '=', False),
+                    ('active', '=', True),
+                ])
+                existing = rec.criteria_line_ids.mapped('criteria_id')
+                for c in criteria:
+                    if c not in existing:
+                        CriteriaLine.create({'evaluation_id': rec.id, 'criteria_id': c.id})
+
+    def _populate_from_template(self, rec, CriteriaLine):
+        """Create criteria lines from template, auto-creating master criteria as needed.
+        Two-pass: parents first so child parent_id references are valid."""
+        Criteria = self.env['bv.evaluation.criteria']
+        parent_map = {}  # template_criteria_id → bv.evaluation.criteria id
+
+        # Pass 1: create/find parent (group) criteria
+        for tc in rec.template_id.criteria_ids.filtered(lambda c: not c.parent_line_id).sorted('sequence'):
+            existing_parent = Criteria.search([
+                ('name', '=', tc.name),
+                ('category', '=', 'general'),
+                ('parent_id', '=', False),
+            ], limit=1)
+            if not existing_parent:
+                existing_parent = Criteria.create({
+                    'name': tc.name,
+                    'code': tc.code or '',
+                    'category': 'general',
+                    'max_score': tc.max_score,
+                    'sequence': tc.sequence,
+                })
+            parent_map[tc.id] = existing_parent.id
+
+        # Pass 2: create/find leaf criteria and their evaluation lines
+        for tc in rec.template_id.criteria_ids.filtered(lambda c: c.parent_line_id).sorted('sequence'):
+            parent_criteria_id = parent_map.get(tc.parent_line_id.id)
+            existing = Criteria.search([
+                ('name', '=', tc.name),
+                ('category', '=', 'general'),
+                ('parent_id', '=', parent_criteria_id),
+            ], limit=1)
+            if not existing:
+                existing = Criteria.create({
+                    'name': tc.name,
+                    'code': tc.code or '',
+                    'category': 'general',
+                    'max_score': tc.max_score,
+                    'sequence': tc.sequence,
+                    'parent_id': parent_criteria_id,
+                    'note': tc.note or '',
+                })
+            CriteriaLine.create({
+                'evaluation_id': rec.id,
+                'criteria_id': existing.id,
+            })
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -270,6 +319,46 @@ class MonthlyEvaluation(models.Model):
             'target': 'new',
         }
 
+    # --- Workflow helpers ---
+    def _get_workflow_steps(self):
+        """Return the effective workflow_steps for this record.
+        Template setting takes priority over global config."""
+        self.ensure_one()
+        if self.template_id and self.template_id.workflow_steps:
+            return self.template_id.workflow_steps
+        config = self._get_config()
+        # Derive from global config flags
+        if config.auto_approve_dept and config.auto_approve_hr and config.auto_approve_director:
+            return 'auto'
+        if config.auto_approve_dept and config.auto_approve_hr:
+            return 'skip_dept'
+        if config.auto_approve_dept:
+            return 'skip_dept'
+        return 'full'
+
+    def _advance_workflow_after_submit(self, config):
+        """Skip states based on workflow_steps after employee submits."""
+        self.ensure_one()
+        steps = self._get_workflow_steps()
+        if steps in ('skip_dept', 'minimal', 'auto'):
+            self.state = 'dept_approved'
+        if steps in ('skip_hr', 'minimal', 'auto') and self.state == 'dept_approved':
+            self.state = 'hr_reviewed'
+        if steps in ('minimal', 'auto') and self.state == 'hr_reviewed':
+            self.state = 'approved'
+            self._check_and_warn_ratio()
+
+    def _advance_workflow_after_dept(self, config):
+        """Skip HR/Director states after dept manager approves."""
+        self.ensure_one()
+        steps = self._get_workflow_steps()
+        if steps in ('skip_hr',) and self.state == 'dept_approved':
+            self.state = 'hr_reviewed'
+        if (config.auto_approve_director or steps in ('minimal', 'auto')) \
+                and self.state == 'hr_reviewed':
+            self.state = 'approved'
+            self._check_and_warn_ratio()
+
     # --- Workflow actions ---
     def action_submit(self):
         for rec in self:
@@ -281,8 +370,9 @@ class MonthlyEvaluation(models.Model):
 
             config = rec._get_config()
 
-            # Notify department manager
-            if config.notify_on_submit:
+            # Notify department manager (only if dept step is active)
+            steps = rec._get_workflow_steps()
+            if config.notify_on_submit and steps not in ('skip_dept', 'minimal', 'auto'):
                 dept_manager = rec.department_id.manager_id
                 if dept_manager and dept_manager.user_id:
                     rec._send_notification(
@@ -291,27 +381,14 @@ class MonthlyEvaluation(models.Model):
                         f'{rec.employee_id.name} đã gửi phiếu đánh giá '
                         f'Tháng {rec.month}/{rec.year} ({rec.total_score:.1f} điểm)')
 
-            # Auto-approve if configured
-            if config.auto_approve_dept:
-                rec.state = 'dept_approved'
-                if config.auto_approve_hr:
-                    rec.state = 'hr_reviewed'
-                    if config.auto_approve_director:
-                        rec.state = 'approved'
-                        rec._check_and_warn_ratio()
+            rec._advance_workflow_after_submit(config)
 
     def action_dept_approve(self):
         for rec in self:
             if rec.state != 'submitted':
                 raise UserError('Chỉ có thể duyệt phiếu đã gửi.')
             rec.state = 'dept_approved'
-
-            config = rec._get_config()
-            if config.auto_approve_hr:
-                rec.state = 'hr_reviewed'
-                if config.auto_approve_director:
-                    rec.state = 'approved'
-                    rec._check_and_warn_ratio()
+            rec._advance_workflow_after_dept(rec._get_config())
 
     def action_hr_review(self):
         for rec in self:
@@ -331,7 +408,6 @@ class MonthlyEvaluation(models.Model):
             rec.state = 'approved'
 
             config = rec._get_config()
-            # Notify employee
             if config.notify_on_approve and rec.employee_id.user_id:
                 rec._send_notification(
                     rec.employee_id.user_id,

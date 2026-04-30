@@ -15,6 +15,15 @@
   --bv-red: #b03030;
 }
 
+/* ─── ROOT SCROLL CONTAINER ─── */
+.bv-eval-form-root {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bv-bg);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
 /* ─── PAGE HEADER ─── */
 .bv-page-header {
   background: var(--bv-navy);

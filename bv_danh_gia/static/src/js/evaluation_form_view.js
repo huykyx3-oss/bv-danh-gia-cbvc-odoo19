@@ -1,6 +1,7 @@
 /** @odoo-module **/
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { session } from "@web/session";
 import { Component, useState, onWillStart, onMounted } from "@odoo/owl";
 
 export class EvaluationFormView extends Component {
@@ -40,7 +41,7 @@ export class EvaluationFormView extends Component {
         onWillStart(async () => {
             this.state.isDeptManager = await this.orm.call(
                 'res.users', 'has_group',
-                [['bv_danh_gia.group_evaluation_dept_manager']],
+                [session.uid, 'bv_danh_gia.group_evaluation_dept_manager'],
             );
             if (this.evalId) {
                 await this.loadRecord();

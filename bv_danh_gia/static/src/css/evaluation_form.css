@@ -194,11 +194,14 @@
 .bv-score-unit { font-size: 11px; color: var(--bv-text-muted); font-weight: 600; }
 
 /* ─── COMPACT TASK TABLE (Phần II) ─── */
+/* 4-column grid: Label | NV% | TP%(hidden when no dept) | PDF
+   .bv-task-tp collapses to 0 when dept column not active — stays in DOM
+   so evidence cell always occupies the 4th track. */
 .bv-task-table { border-top: 1px solid var(--bv-gray-light); }
 .bv-task-head,
 .bv-task-row {
   display: grid;
-  grid-template-columns: 1fr 105px 155px;
+  grid-template-columns: minmax(0,1fr) 96px 0 minmax(160px,220px);
   align-items: center; gap: 8px; padding: 8px 16px;
 }
 .bv-task-head {
@@ -225,7 +228,8 @@
   white-space: nowrap; flex-shrink: 0;
 }
 .bv-task-cell { display: flex; flex-direction: column; gap: 4px; }
-.bv-task-tp { display: none; }
+/* TP column: hidden (width=0) by default, overflow clipped */
+.bv-task-tp { overflow: hidden; }
 .bv-pct-wrap { display: flex; align-items: center; gap: 5px; }
 .bv-pct-input-sm {
   width: 64px; padding: 5px 6px;
@@ -243,21 +247,33 @@
 }
 .bv-mini-bar div { background: var(--bv-navy); height: 100%; transition: width .3s; }
 .bv-mini-bar--dept div { background: var(--bv-gold); }
-.bv-task-ev { display: flex; align-items: center; }
+/* Evidence column (4th) */
+.bv-task-ev {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 4px; border-left: 1px solid var(--bv-gray-light);
+  padding-left: 10px;
+}
 .bv-ev-btn {
   display: inline-flex; align-items: center; gap: 5px;
   cursor: pointer; padding: 4px 10px;
   border: 1.5px dashed var(--bv-gold); border-radius: 6px;
   font-size: 11px; color: #7a5e00; background: #fffdf5;
   white-space: nowrap; overflow: hidden;
-  max-width: 145px; text-overflow: ellipsis;
+  max-width: 180px; text-overflow: ellipsis;
   transition: background .15s;
 }
 .bv-ev-btn:hover { background: #fff8e0; }
+.bv-ev-dl {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #1a5e9e;
+  text-decoration: none; white-space: nowrap;
+  overflow: hidden; max-width: 180px; text-overflow: ellipsis;
+}
+.bv-ev-dl:hover { text-decoration: underline; color: #0d3f6e; }
 .bv-ev-name {
   font-size: 11px; color: #2d7a4f;
   display: flex; align-items: center; gap: 4px;
-  overflow: hidden; max-width: 145px; white-space: nowrap;
+  overflow: hidden; max-width: 180px; white-space: nowrap;
 }
 .bv-task-total {
   display: flex; justify-content: flex-end; align-items: center;
@@ -266,12 +282,12 @@
   background: #f5f3ee; border-top: 2px solid var(--bv-gold);
 }
 .bv-task-total-val { font-size: 16px; font-weight: 800; color: var(--bv-navy); }
-/* With TP column */
+/* With TP column — expand 3rd track to 90px */
 .bv-task-table--dept .bv-task-head,
 .bv-task-table--dept .bv-task-row {
-  grid-template-columns: 1fr 95px 95px 145px;
+  grid-template-columns: minmax(0,1fr) 90px 90px minmax(160px,220px);
 }
-.bv-task-table--dept .bv-task-tp { display: flex; }
+.bv-task-table--dept .bv-task-tp { overflow: visible; }
 
 /* ─── CRITERIA OPTIONS ─── */
 .bv-criteria-options {

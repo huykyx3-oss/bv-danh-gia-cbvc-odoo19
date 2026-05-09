@@ -1,19 +1,19 @@
 /* ──────────────────────────────────────────────────────────
    KQTHNV Grid Table — Odoo Standard Form, Tab II
-   4 columns: label | NV tự chấm | TK/TP chấm | Minh chứng
+   4 columns: label | NV tự chấm (%) | TK/TP chấm (%) | Minh chứng PDF
    ────────────────────────────────────────────────────────── */
 
 .bv-kqtnv-section {
     margin: 0 0 14px 0;
     border: 1px solid #dee2e6;
     border-radius: 6px;
-    overflow: hidden;
+    /* no overflow:hidden — would clip Odoo binary upload widget */
 }
 
 .bv-kqtnv-head,
 .bv-kqtnv-row {
     display: grid;
-    grid-template-columns: 1fr 120px 120px 220px;
+    grid-template-columns: minmax(160px, 1fr) 110px 110px minmax(200px, 280px);
     gap: 0;
 }
 
@@ -60,12 +60,6 @@
     justify-content: center;
 }
 
-.bv-kq-c-ev {
-    gap: 6px;
-    flex-wrap: wrap;
-    font-size: 12px;
-}
-
 /* Manager criteria section — amber accent */
 .bv-kqtnv-section--mgr {
     border-color: #ffc107;
@@ -93,14 +87,97 @@
     padding: 4px 6px;
 }
 
-/* Binary widget — compact download button */
-.bv-kq-c-ev .o_field_binary .o_form_binary_file_label {
-    font-size: 11px;
-    word-break: break-all;
-    max-width: 140px;
+/* ── Evidence column (4th col, inline in each row) ── */
+.bv-kq-c-ev {
+    padding: 6px 10px;
+    border-left: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
 }
 
-.bv-kq-c-ev .o_field_binary button {
+/* Strip margins from Odoo group wrapper so it fits in the grid cell */
+.bv-ev-group {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+}
+.bv-ev-group .o_wrap_field {
+    margin: 0 !important;
+}
+.bv-ev-group .o_cell {
+    padding: 2px 0 !important;
+}
+
+/* Compact the binary widget inside the evidence column */
+.bv-kq-c-ev .o_field_binary,
+.bv-kq-c-ev .o_field_binary_file,
+.bv-kq-c-ev .o_field_widget {
+    width: 100%;
+}
+.bv-kq-c-ev .o_field_binary .btn,
+.bv-kq-c-ev .o_field_binary_file .btn {
     padding: 3px 8px;
     font-size: 11px;
+    white-space: nowrap;
+}
+.bv-kq-c-ev .o_field_binary .o_form_binary_file_label,
+.bv-kq-c-ev .o_field_binary_file .o_form_binary_file_label {
+    font-size: 11px;
+    word-break: break-all;
+    max-width: 220px;
+    display: inline-block;
+}
+
+/* ── Tab III: Summary table ── */
+.bv-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.bv-summary-head,
+.bv-summary-row {
+    display: grid;
+    grid-template-columns: 1fr 140px 180px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.bv-summary-head {
+    background: #f8f9fa;
+    font-weight: 700;
+    border-bottom: 2px solid #adb5bd;
+}
+
+.bv-summary-head > div,
+.bv-summary-row > div {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+}
+
+.bv-summary-row--total {
+    background: #fffbe6;
+}
+
+.bv-col-tp--highlight {
+    font-weight: 700;
+    color: #856404;
+}
+
+.bv-col-nv {
+    justify-content: center;
+    text-align: center;
+}
+
+.bv-col-tp {
+    justify-content: center;
+    text-align: center;
+    border-left: 2px solid #ffe08a;
+}
+
+/* Hide auto-generated labels inside summary table */
+.bv-summary-table .o_field_widget .o_form_label,
+.bv-summary-table .o_field_widget label {
+    display: none !important;
 }

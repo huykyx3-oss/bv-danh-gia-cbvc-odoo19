@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ========== FORM VIEW ========== -->
     <record id="view_monthly_evaluation_form" model="ir.ui.view">
@@ -125,7 +125,7 @@
                                     <div class="bv-kq-c-ev">Minh chứng PDF</div>
                                 </div>
                                 <div class="bv-kqtnv-row">
-                                    <div class="bv-kq-c-label">a – <field name="task_label_quantity" nolabel="1" readonly="1" class="oe_inline"/></div>
+                                    <div class="bv-kq-c-label">a – <field name="label_pct_a" nolabel="1" readonly="1" class="oe_inline"/></div>
                                     <div class="bv-kq-c-nv"><field name="pct_quantity" nolabel="1" readonly="state not in ('draft', 'submitted')"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_quantity" nolabel="1" readonly="not can_edit_dept_score" invisible="not can_edit_dept_score and state not in ('dept_approved', 'hr_reviewed', 'approved')"/></div>
                                     <div class="bv-kq-c-ev">
@@ -134,7 +134,7 @@
                                     </div>
                                 </div>
                                 <div class="bv-kqtnv-row">
-                                    <div class="bv-kq-c-label">b – <field name="task_label_quality" nolabel="1" readonly="1" class="oe_inline"/></div>
+                                    <div class="bv-kq-c-label">b – <field name="label_pct_b" nolabel="1" readonly="1" class="oe_inline"/></div>
                                     <div class="bv-kq-c-nv"><field name="pct_quality" nolabel="1" readonly="state not in ('draft', 'submitted')"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_quality" nolabel="1" readonly="not can_edit_dept_score" invisible="not can_edit_dept_score and state not in ('dept_approved', 'hr_reviewed', 'approved')"/></div>
                                     <div class="bv-kq-c-ev">
@@ -143,7 +143,7 @@
                                     </div>
                                 </div>
                                 <div class="bv-kqtnv-row">
-                                    <div class="bv-kq-c-label">c – <field name="task_label_progress" nolabel="1" readonly="1" class="oe_inline"/></div>
+                                    <div class="bv-kq-c-label">c – <field name="label_pct_c" nolabel="1" readonly="1" class="oe_inline"/></div>
                                     <div class="bv-kq-c-nv"><field name="pct_progress" nolabel="1" readonly="state not in ('draft', 'submitted')"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_progress" nolabel="1" readonly="not can_edit_dept_score" invisible="not can_edit_dept_score and state not in ('dept_approved', 'hr_reviewed', 'approved')"/></div>
                                     <div class="bv-kq-c-ev">
@@ -162,7 +162,7 @@
                                     <div class="bv-kq-c-ev">Minh chứng PDF</div>
                                 </div>
                                 <div class="bv-kqtnv-row">
-                                    <div class="bv-kq-c-label">d – <field name="task_label_field_result" nolabel="1" readonly="1" class="oe_inline"/></div>
+                                    <div class="bv-kq-c-label">d – <field name="label_pct_d" nolabel="1" readonly="1" class="oe_inline"/></div>
                                     <div class="bv-kq-c-nv"><field name="pct_field_result" nolabel="1" readonly="state not in ('draft', 'submitted')"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_field_result" nolabel="1" readonly="not can_edit_dept_score" invisible="not can_edit_dept_score and state not in ('dept_approved', 'hr_reviewed', 'approved')"/></div>
                                     <div class="bv-kq-c-ev">
@@ -171,7 +171,7 @@
                                     </div>
                                 </div>
                                 <div class="bv-kqtnv-row">
-                                    <div class="bv-kq-c-label">đ – <field name="task_label_organization" nolabel="1" readonly="1" class="oe_inline"/></div>
+                                    <div class="bv-kq-c-label">đ – <field name="label_pct_dd" nolabel="1" readonly="1" class="oe_inline"/></div>
                                     <div class="bv-kq-c-nv"><field name="pct_organization" nolabel="1" readonly="state not in ('draft', 'submitted')"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_organization" nolabel="1" readonly="not can_edit_dept_score" invisible="not can_edit_dept_score and state not in ('dept_approved', 'hr_reviewed', 'approved')"/></div>
                                     <div class="bv-kq-c-ev">
@@ -180,7 +180,7 @@
                                     </div>
                                 </div>
                                 <div class="bv-kqtnv-row">
-                                    <div class="bv-kq-c-label">e – <field name="task_label_team_cohesion" nolabel="1" readonly="1" class="oe_inline"/></div>
+                                    <div class="bv-kq-c-label">e – <field name="label_pct_e" nolabel="1" readonly="1" class="oe_inline"/></div>
                                     <div class="bv-kq-c-nv"><field name="pct_team_cohesion" nolabel="1" readonly="state not in ('draft', 'submitted')"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_team_cohesion" nolabel="1" readonly="not can_edit_dept_score" invisible="not can_edit_dept_score and state not in ('dept_approved', 'hr_reviewed', 'approved')"/></div>
                                     <div class="bv-kq-c-ev">
@@ -336,7 +336,7 @@
                                     <div class="bv-kq-c-nv"><field name="pct_quantity" nolabel="1" readonly="1"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_quantity" nolabel="1" readonly="state != 'submitted'"/></div>
                                     <div class="bv-kq-c-ev">
-                                        <field name="evidence_quantity" widget="binary" filename="evidence_quantity_name" nolabel="1" readonly="1"/>
+                                        <field name="evidence_quantity" widget="binary" filename="evidence_quantity_name" nolabel="1" readonly="state != 'submitted'"/>
                                         <field name="evidence_quantity_name" invisible="1"/>
                                     </div>
                                 </div>
@@ -345,7 +345,7 @@
                                     <div class="bv-kq-c-nv"><field name="pct_quality" nolabel="1" readonly="1"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_quality" nolabel="1" readonly="state != 'submitted'"/></div>
                                     <div class="bv-kq-c-ev">
-                                        <field name="evidence_quality" widget="binary" filename="evidence_quality_name" nolabel="1" readonly="1"/>
+                                        <field name="evidence_quality" widget="binary" filename="evidence_quality_name" nolabel="1" readonly="state != 'submitted'"/>
                                         <field name="evidence_quality_name" invisible="1"/>
                                     </div>
                                 </div>
@@ -354,7 +354,7 @@
                                     <div class="bv-kq-c-nv"><field name="pct_progress" nolabel="1" readonly="1"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_progress" nolabel="1" readonly="state != 'submitted'"/></div>
                                     <div class="bv-kq-c-ev">
-                                        <field name="evidence_progress" widget="binary" filename="evidence_progress_name" nolabel="1" readonly="1"/>
+                                        <field name="evidence_progress" widget="binary" filename="evidence_progress_name" nolabel="1" readonly="state != 'submitted'"/>
                                         <field name="evidence_progress_name" invisible="1"/>
                                     </div>
                                 </div>
@@ -373,7 +373,7 @@
                                     <div class="bv-kq-c-nv"><field name="pct_field_result" nolabel="1" readonly="1"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_field_result" nolabel="1" readonly="state != 'submitted'"/></div>
                                     <div class="bv-kq-c-ev">
-                                        <field name="evidence_field_result" widget="binary" filename="evidence_field_result_name" nolabel="1" readonly="1"/>
+                                        <field name="evidence_field_result" widget="binary" filename="evidence_field_result_name" nolabel="1" readonly="state != 'submitted'"/>
                                         <field name="evidence_field_result_name" invisible="1"/>
                                     </div>
                                 </div>
@@ -382,7 +382,7 @@
                                     <div class="bv-kq-c-nv"><field name="pct_organization" nolabel="1" readonly="1"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_organization" nolabel="1" readonly="state != 'submitted'"/></div>
                                     <div class="bv-kq-c-ev">
-                                        <field name="evidence_organization" widget="binary" filename="evidence_organization_name" nolabel="1" readonly="1"/>
+                                        <field name="evidence_organization" widget="binary" filename="evidence_organization_name" nolabel="1" readonly="state != 'submitted'"/>
                                         <field name="evidence_organization_name" invisible="1"/>
                                     </div>
                                 </div>
@@ -391,7 +391,7 @@
                                     <div class="bv-kq-c-nv"><field name="pct_team_cohesion" nolabel="1" readonly="1"/></div>
                                     <div class="bv-kq-c-tp"><field name="dept_pct_team_cohesion" nolabel="1" readonly="state != 'submitted'"/></div>
                                     <div class="bv-kq-c-ev">
-                                        <field name="evidence_team_cohesion" widget="binary" filename="evidence_team_cohesion_name" nolabel="1" readonly="1"/>
+                                        <field name="evidence_team_cohesion" widget="binary" filename="evidence_team_cohesion_name" nolabel="1" readonly="state != 'submitted'"/>
                                         <field name="evidence_team_cohesion_name" invisible="1"/>
                                     </div>
                                 </div>

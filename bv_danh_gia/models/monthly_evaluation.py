@@ -63,6 +63,14 @@ class MonthlyEvaluation(models.Model):
         domain="[('active', '=', True), ('template_type', '=', 'monthly')]",
         help='Biểu mẫu đánh giá do TCCB tạo')
 
+    # --- Nhãn tiêu chí KQTHNV (lấy từ biểu mẫu, TCCB chỉnh) ---
+    label_pct_a = fields.Char(related='template_id.label_pct_a', readonly=True)
+    label_pct_b = fields.Char(related='template_id.label_pct_b', readonly=True)
+    label_pct_c = fields.Char(related='template_id.label_pct_c', readonly=True)
+    label_pct_d = fields.Char(related='template_id.label_pct_d', readonly=True)
+    label_pct_dd = fields.Char(related='template_id.label_pct_dd', readonly=True)
+    label_pct_e = fields.Char(related='template_id.label_pct_e', readonly=True)
+
     # --- Tiêu chí chung (30 điểm) ---
     criteria_line_ids = fields.One2many(
         'bv.evaluation.criteria.line', 'evaluation_id',
@@ -70,20 +78,6 @@ class MonthlyEvaluation(models.Model):
     general_score = fields.Float(
         string='Điểm tiêu chí chung', compute='_compute_general_score',
         store=True, tracking=True)
-
-    # --- Nhãn tiêu chí KQTHNV (đọc từ template, fallback chuỗi mặc định) ---
-    task_label_quantity = fields.Char(
-        related='template_id.task_label_quantity', string='Nhãn a', readonly=True)
-    task_label_quality = fields.Char(
-        related='template_id.task_label_quality', string='Nhãn b', readonly=True)
-    task_label_progress = fields.Char(
-        related='template_id.task_label_progress', string='Nhãn c', readonly=True)
-    task_label_field_result = fields.Char(
-        related='template_id.task_label_field_result', string='Nhãn d', readonly=True)
-    task_label_organization = fields.Char(
-        related='template_id.task_label_organization', string='Nhãn đ', readonly=True)
-    task_label_team_cohesion = fields.Char(
-        related='template_id.task_label_team_cohesion', string='Nhãn e', readonly=True)
 
     # --- Tiêu chí kết quả nhiệm vụ (70 điểm) — NV tự chấm ---
     task_line_ids = fields.One2many(
@@ -150,24 +144,36 @@ class MonthlyEvaluation(models.Model):
         compute='_compute_score_maxes', store=True,
         help='Lấy từ biểu mẫu đánh giá; mặc định 70 nếu không có biểu mẫu')
 
-    # --- Điểm NV tự chấm (chỉ đọc, để so sánh) ---
-    general_score_nv = fields.Float(
-        string='Điểm Phần I (NV tự chấm)',
-        compute='_compute_nv_scores', store=True)
-    task_score_nv = fields.Float(
-        string='Điểm KQTHNV (NV tự chấm)',
-        compute='_compute_nv_scores', store=True)
-    total_score_nv = fields.Float(
-        string='Tổng điểm NV tự chấm',
-        compute='_compute_nv_scores', store=True)
-
-    # --- Tổng điểm ---
+    # --- Tổng điểm (workflow) ---
     total_score = fields.Float(
         string='Tổng điểm', compute='_compute_total_score',
         store=True, tracking=True)
     classification = fields.Selection(
         CLASSIFICATION, string='Mức xếp loại',
         compute='_compute_classification', store=True, tracking=True)
+
+    # --- Điểm TK/TP chấm (độc lập với NV) ---
+    general_score_nv = fields.Float(
+        string='Điểm Phần I (NV tự chấm)',
+        compute='_compute_nv_tp_scores', store=True)
+    general_score_tp = fields.Float(
+        string='Điểm Phần I (TK/TP chấm)',
+        compute='_compute_nv_tp_scores', store=True)
+    task_score_nv = fields.Float(
+        string='Điểm KQTHNV (NV tự chấm)',
+        compute='_compute_nv_tp_scores', store=True)
+    task_score_tp = fields.Float(
+        string='Điểm KQTHNV (TK/TP chấm)',
+        compute='_compute_nv_tp_scores', store=True)
+    total_score_nv = fields.Float(
+        string='Tổng điểm (NV tự chấm)',
+        compute='_compute_nv_tp_scores', store=True)
+    total_score_tp = fields.Float(
+        string='Tổng điểm (TK/TP chấm)',
+        compute='_compute_nv_tp_scores', store=True)
+    classification_tp = fields.Selection(
+        CLASSIFICATION, string='Xếp loại (TK/TP chấm)',
+        compute='_compute_nv_tp_scores', store=True)
 
     # --- Nhận xét ---
     strengths = fields.Text(string='Ưu điểm')
@@ -196,11 +202,9 @@ class MonthlyEvaluation(models.Model):
 
     @api.depends('state')
     def _compute_can_edit_dept_score(self):
+        is_dept_mgr = self.env.user.has_group('bv_danh_gia.group_evaluation_dept_manager')
         for rec in self:
-            rec.can_edit_dept_score = (
-                rec.state == 'submitted'
-                and self.env.user.has_group('bv_danh_gia.group_evaluation_dept_manager')
-            )
+            rec.can_edit_dept_score = rec.state == 'submitted' and is_dept_mgr
 
     @api.depends('criteria_line_ids.final_score')
     def _compute_general_score(self):
@@ -217,9 +221,9 @@ class MonthlyEvaluation(models.Model):
     def _compute_task_score(self):
         for rec in self:
             max_pts = rec.task_score_max or 70.0
-            # Khi TK đang chấm (submitted) hoặc sau duyệt: dùng điểm TK nếu đã nhập
+            # Sau khi trưởng phòng duyệt, ưu tiên dùng điểm TP nếu đã nhập
             use_dept = (
-                rec.state in ('submitted', 'dept_approved', 'hr_reviewed', 'approved')
+                rec.state in ('dept_approved', 'hr_reviewed', 'approved')
                 and (
                     rec.dept_pct_quantity or rec.dept_pct_quality or rec.dept_pct_progress
                     or rec.dept_pct_field_result or rec.dept_pct_organization
@@ -249,28 +253,6 @@ class MonthlyEvaluation(models.Model):
                 else:
                     total_pct = rec.pct_quantity + rec.pct_quality + rec.pct_progress
                     rec.task_score = (total_pct / 3.0) * max_pts / 100.0
-
-    @api.depends(
-        'criteria_line_ids.self_score',
-        'is_manager',
-        'pct_quantity', 'pct_quality', 'pct_progress',
-        'pct_field_result', 'pct_organization', 'pct_team_cohesion',
-        'task_score_max',
-    )
-    def _compute_nv_scores(self):
-        for rec in self:
-            rec.general_score_nv = sum(rec.criteria_line_ids.mapped('self_score'))
-            max_pts = rec.task_score_max or 70.0
-            if rec.is_manager:
-                total_pct = (
-                    rec.pct_quantity + rec.pct_quality + rec.pct_progress
-                    + rec.pct_field_result + rec.pct_organization + rec.pct_team_cohesion
-                )
-                rec.task_score_nv = (total_pct / 6.0) * max_pts / 100.0
-            else:
-                total_pct = rec.pct_quantity + rec.pct_quality + rec.pct_progress
-                rec.task_score_nv = (total_pct / 3.0) * max_pts / 100.0
-            rec.total_score_nv = rec.general_score_nv + rec.task_score_nv
 
     @api.depends('template_id', 'template_id.task_score_weight',
                  'template_id.total_general_score')
@@ -304,6 +286,75 @@ class MonthlyEvaluation(models.Model):
                 rec.classification = 'fair'
             else:
                 rec.classification = 'poor'
+
+    @api.depends(
+        'criteria_line_ids.self_score', 'criteria_line_ids.dept_score',
+        'is_manager', 'task_score_max',
+        'pct_quantity', 'pct_quality', 'pct_progress',
+        'pct_field_result', 'pct_organization', 'pct_team_cohesion',
+        'dept_pct_quantity', 'dept_pct_quality', 'dept_pct_progress',
+        'dept_pct_field_result', 'dept_pct_organization', 'dept_pct_team_cohesion',
+    )
+    def _compute_nv_tp_scores(self):
+        for rec in self:
+            max_pts = rec.task_score_max or 70.0
+
+            # Phần I
+            rec.general_score_nv = sum(rec.criteria_line_ids.mapped('self_score'))
+            rec.general_score_tp = sum(rec.criteria_line_ids.mapped('dept_score'))
+
+            # Phần II — NV
+            if rec.is_manager:
+                nv_pct = (rec.pct_quantity + rec.pct_quality + rec.pct_progress
+                          + rec.pct_field_result + rec.pct_organization + rec.pct_team_cohesion)
+                rec.task_score_nv = (nv_pct / 6.0) * max_pts / 100.0
+            else:
+                nv_pct = rec.pct_quantity + rec.pct_quality + rec.pct_progress
+                rec.task_score_nv = (nv_pct / 3.0) * max_pts / 100.0
+
+            # Phần II — TK/TP (luôn từ dept_pct_*, không phụ thuộc NV)
+            if rec.is_manager:
+                tp_pct = (rec.dept_pct_quantity + rec.dept_pct_quality + rec.dept_pct_progress
+                          + rec.dept_pct_field_result + rec.dept_pct_organization
+                          + rec.dept_pct_team_cohesion)
+                rec.task_score_tp = (tp_pct / 6.0) * max_pts / 100.0
+            else:
+                tp_pct = rec.dept_pct_quantity + rec.dept_pct_quality + rec.dept_pct_progress
+                rec.task_score_tp = (tp_pct / 3.0) * max_pts / 100.0
+
+            # Tổng
+            rec.total_score_nv = rec.general_score_nv + rec.task_score_nv
+            rec.total_score_tp = rec.general_score_tp + rec.task_score_tp
+
+            # Xếp loại TK/TP
+            score_tp = rec.total_score_tp
+            if score_tp >= 90:
+                rec.classification_tp = 'excellent'
+            elif score_tp >= 70:
+                rec.classification_tp = 'good'
+            elif score_tp >= 50:
+                rec.classification_tp = 'fair'
+            else:
+                rec.classification_tp = 'poor'
+
+    def action_copy_nv_scores_to_tp(self):
+        """Sao chép điểm NV → TK/TP để dùng làm điểm bắt đầu."""
+        self.ensure_one()
+        if not self.can_edit_dept_score:
+            raise UserError(
+                'Chỉ trưởng khoa/phòng mới có thể sao chép điểm khi phiếu đang ở trạng thái "Đã gửi".'
+            )
+        # Phần I: copy self_score → dept_score cho từng dòng tiêu chí
+        for line in self.criteria_line_ids:
+            line.dept_score = line.self_score
+        # Phần II: copy pct_* → dept_pct_*
+        self.dept_pct_quantity = self.pct_quantity
+        self.dept_pct_quality = self.pct_quality
+        self.dept_pct_progress = self.pct_progress
+        self.dept_pct_field_result = self.pct_field_result
+        self.dept_pct_organization = self.pct_organization
+        self.dept_pct_team_cohesion = self.pct_team_cohesion
+        return {'type': 'ir.actions.act_window_close'}
 
     @api.onchange('template_id')
     def _onchange_template_id(self):
@@ -408,6 +459,7 @@ class MonthlyEvaluation(models.Model):
         'evidence_team_cohesion', 'evidence_team_cohesion_name',
     )
     def _check_evidence_pdf(self):
+        import json, os
         pairs = [
             ('evidence_quantity', 'evidence_quantity_name', 'a – Số lượng'),
             ('evidence_quality', 'evidence_quality_name', 'b – Chất lượng'),

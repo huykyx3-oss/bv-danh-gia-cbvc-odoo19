@@ -109,57 +109,109 @@
                             </group>
                         </page>
 
-                        <!-- Tab 2: Nhiệm vụ được giao -->
-                        <page string="II. Nhiệm vụ được giao">
-                            <field name="task_line_ids"
-                                   readonly="state not in ('draft', 'submitted')">
-                                <list editable="bottom">
-                                    <field name="sequence" widget="handle"/>
-                                    <field name="task_name"/>
-                                    <field name="output_product"/>
-                                    <field name="deadline"/>
-                                    <field name="completion_date"/>
-                                    <field name="quantity_pct"/>
-                                    <field name="quality_pct"/>
-                                    <field name="progress_pct"/>
-                                    <field name="is_on_time" readonly="1"/>
-                                    <field name="note" optional="hide"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <!-- Tab 3: Kết quả thực hiện nhiệm vụ -->
-                        <page string="III. Điểm KQTHNV">
+                        <!-- Tab 2: Điểm KQTHNV -->
+                        <page string="II. Điểm KQTHNV">
                             <group>
                                 <field name="task_score_max" readonly="1"
-                                       string="Điểm tối đa phần II / KQTHNV (theo biểu mẫu)"/>
+                                       string="Điểm tối đa KQTHNV (theo biểu mẫu)"/>
                             </group>
-                            <group>
-                                <group string="Tiêu chí cơ bản (tất cả CBVC)">
+                            <!-- Tiêu chí cơ bản -->
+                            <group string="Tiêu chí cơ bản (tất cả CBVC)">
+                                <group string="NV tự chấm">
                                     <field name="pct_quantity"
-                                           readonly="state not in ('draft', 'submitted')"/>
+                                           readonly="state not in ('draft', 'submitted')"
+                                           string="a - % Số lượng"/>
                                     <field name="pct_quality"
-                                           readonly="state not in ('draft', 'submitted')"/>
+                                           readonly="state not in ('draft', 'submitted')"
+                                           string="b - % Chất lượng"/>
                                     <field name="pct_progress"
-                                           readonly="state not in ('draft', 'submitted')"/>
+                                           readonly="state not in ('draft', 'submitted')"
+                                           string="c - % Tiến độ"/>
                                 </group>
-                                <group string="Tiêu chí bổ sung (chức vụ lãnh đạo)"
-                                       invisible="not is_manager">
+                                <group string="Trưởng khoa/phòng chấm"
+                                       invisible="not can_edit_dept_score and state not in ('dept_approved', 'hr_reviewed', 'approved')">
+                                    <field name="dept_pct_quantity"
+                                           readonly="not can_edit_dept_score"
+                                           string="a - % Số lượng"/>
+                                    <field name="dept_pct_quality"
+                                           readonly="not can_edit_dept_score"
+                                           string="b - % Chất lượng"/>
+                                    <field name="dept_pct_progress"
+                                           readonly="not can_edit_dept_score"
+                                           string="c - % Tiến độ"/>
+                                </group>
+                            </group>
+                            <!-- Tiêu chí lãnh đạo -->
+                            <group string="Tiêu chí bổ sung (chức vụ lãnh đạo)"
+                                   invisible="not is_manager">
+                                <group string="NV tự chấm">
                                     <field name="pct_field_result"
-                                           readonly="state not in ('draft', 'submitted')"/>
+                                           readonly="state not in ('draft', 'submitted')"
+                                           string="d - % Kết quả lĩnh vực"/>
                                     <field name="pct_organization"
-                                           readonly="state not in ('draft', 'submitted')"/>
+                                           readonly="state not in ('draft', 'submitted')"
+                                           string="đ - % Tổ chức triển khai"/>
                                     <field name="pct_team_cohesion"
-                                           readonly="state not in ('draft', 'submitted')"/>
+                                           readonly="state not in ('draft', 'submitted')"
+                                           string="e - % Đoàn kết"/>
                                 </group>
+                                <group string="Trưởng khoa/phòng chấm"
+                                       invisible="not can_edit_dept_score and state not in ('dept_approved', 'hr_reviewed', 'approved')">
+                                    <field name="dept_pct_field_result"
+                                           readonly="not can_edit_dept_score"
+                                           string="d - % Kết quả lĩnh vực"/>
+                                    <field name="dept_pct_organization"
+                                           readonly="not can_edit_dept_score"
+                                           string="đ - % Tổ chức triển khai"/>
+                                    <field name="dept_pct_team_cohesion"
+                                           readonly="not can_edit_dept_score"
+                                           string="e - % Đoàn kết"/>
+                                </group>
+                            </group>
+                            <!-- Tài liệu minh chứng -->
+                            <separator string="Tài liệu minh chứng (PDF)"/>
+                            <group string="Minh chứng tiêu chí cơ bản">
+                                <field name="evidence_quantity" widget="binary"
+                                       filename="evidence_quantity_name"
+                                       string="a - Minh chứng số lượng"
+                                       readonly="state != 'draft'"/>
+                                <field name="evidence_quantity_name" invisible="1"/>
+                                <field name="evidence_quality" widget="binary"
+                                       filename="evidence_quality_name"
+                                       string="b - Minh chứng chất lượng"
+                                       readonly="state != 'draft'"/>
+                                <field name="evidence_quality_name" invisible="1"/>
+                                <field name="evidence_progress" widget="binary"
+                                       filename="evidence_progress_name"
+                                       string="c - Minh chứng tiến độ"
+                                       readonly="state != 'draft'"/>
+                                <field name="evidence_progress_name" invisible="1"/>
+                            </group>
+                            <group string="Minh chứng tiêu chí lãnh đạo"
+                                   invisible="not is_manager">
+                                <field name="evidence_field_result" widget="binary"
+                                       filename="evidence_field_result_name"
+                                       string="d - Minh chứng kết quả lĩnh vực"
+                                       readonly="state != 'draft'"/>
+                                <field name="evidence_field_result_name" invisible="1"/>
+                                <field name="evidence_organization" widget="binary"
+                                       filename="evidence_organization_name"
+                                       string="đ - Minh chứng tổ chức triển khai"
+                                       readonly="state != 'draft'"/>
+                                <field name="evidence_organization_name" invisible="1"/>
+                                <field name="evidence_team_cohesion" widget="binary"
+                                       filename="evidence_team_cohesion_name"
+                                       string="e - Minh chứng đoàn kết"
+                                       readonly="state != 'draft'"/>
+                                <field name="evidence_team_cohesion_name" invisible="1"/>
                             </group>
                             <group>
                                 <field name="task_score" readonly="1" class="oe_inline"/>
                             </group>
                         </page>
 
-                        <!-- Tab 4: Tổng hợp -->
-                        <page string="IV. Tổng hợp kết quả">
+                        <!-- Tab 3: Tổng hợp -->
+                        <page string="III. Tổng hợp kết quả">
                             <group>
                                 <group>
                                     <field name="general_score" readonly="1"/>
@@ -264,30 +316,83 @@
                             </group>
                         </page>
 
-                        <page string="II. Kết quả nhiệm vụ (% hoàn thành)">
+                        <page string="II. Điểm KQTHNV">
                             <div class="alert alert-warning" role="alert"
                                  invisible="state != 'submitted'">
-                                Trưởng khoa/phòng xác nhận các % hoàn thành nhiệm vụ dưới đây.
-                                Chỉnh sửa nếu cần thiết.
+                                Nhập điểm % của <strong>Trưởng khoa/phòng</strong> vào cột bên phải.
+                                Cột NV tự chấm chỉ để tham khảo.
                             </div>
-                            <group>
-                                <group string="Tiêu chí cơ bản">
-                                    <field name="pct_quantity"
-                                           readonly="state != 'submitted'"/>
-                                    <field name="pct_quality"
-                                           readonly="state != 'submitted'"/>
-                                    <field name="pct_progress"
-                                           readonly="state != 'submitted'"/>
+                            <!-- Tiêu chí cơ bản -->
+                            <group string="Tiêu chí cơ bản (tất cả CBVC)">
+                                <group string="NV tự chấm">
+                                    <field name="pct_quantity" readonly="1" string="a - % Số lượng"/>
+                                    <field name="pct_quality" readonly="1" string="b - % Chất lượng"/>
+                                    <field name="pct_progress" readonly="1" string="c - % Tiến độ"/>
                                 </group>
-                                <group string="Tiêu chí lãnh đạo"
-                                       invisible="not is_manager">
-                                    <field name="pct_field_result"
-                                           readonly="state != 'submitted'"/>
-                                    <field name="pct_organization"
-                                           readonly="state != 'submitted'"/>
-                                    <field name="pct_team_cohesion"
-                                           readonly="state != 'submitted'"/>
+                                <group string="Trưởng khoa/phòng chấm ✏">
+                                    <field name="dept_pct_quantity"
+                                           readonly="state != 'submitted'"
+                                           string="a - % Số lượng"/>
+                                    <field name="dept_pct_quality"
+                                           readonly="state != 'submitted'"
+                                           string="b - % Chất lượng"/>
+                                    <field name="dept_pct_progress"
+                                           readonly="state != 'submitted'"
+                                           string="c - % Tiến độ"/>
                                 </group>
+                            </group>
+                            <!-- Tiêu chí lãnh đạo -->
+                            <group string="Tiêu chí bổ sung (chức vụ lãnh đạo)"
+                                   invisible="not is_manager">
+                                <group string="NV tự chấm">
+                                    <field name="pct_field_result" readonly="1"
+                                           string="d - % Kết quả lĩnh vực"/>
+                                    <field name="pct_organization" readonly="1"
+                                           string="đ - % Tổ chức"/>
+                                    <field name="pct_team_cohesion" readonly="1"
+                                           string="e - % Đoàn kết"/>
+                                </group>
+                                <group string="Trưởng khoa/phòng chấm ✏">
+                                    <field name="dept_pct_field_result"
+                                           readonly="state != 'submitted'"
+                                           string="d - % Kết quả lĩnh vực"/>
+                                    <field name="dept_pct_organization"
+                                           readonly="state != 'submitted'"
+                                           string="đ - % Tổ chức"/>
+                                    <field name="dept_pct_team_cohesion"
+                                           readonly="state != 'submitted'"
+                                           string="e - % Đoàn kết"/>
+                                </group>
+                            </group>
+                            <!-- Minh chứng (chỉ xem) -->
+                            <separator string="Tài liệu minh chứng NV đính kèm"/>
+                            <group string="Minh chứng cơ bản">
+                                <field name="evidence_quantity" widget="binary"
+                                       filename="evidence_quantity_name"
+                                       string="a - Minh chứng số lượng" readonly="1"/>
+                                <field name="evidence_quantity_name" invisible="1"/>
+                                <field name="evidence_quality" widget="binary"
+                                       filename="evidence_quality_name"
+                                       string="b - Minh chứng chất lượng" readonly="1"/>
+                                <field name="evidence_quality_name" invisible="1"/>
+                                <field name="evidence_progress" widget="binary"
+                                       filename="evidence_progress_name"
+                                       string="c - Minh chứng tiến độ" readonly="1"/>
+                                <field name="evidence_progress_name" invisible="1"/>
+                            </group>
+                            <group string="Minh chứng lãnh đạo" invisible="not is_manager">
+                                <field name="evidence_field_result" widget="binary"
+                                       filename="evidence_field_result_name"
+                                       string="d - Minh chứng kết quả lĩnh vực" readonly="1"/>
+                                <field name="evidence_field_result_name" invisible="1"/>
+                                <field name="evidence_organization" widget="binary"
+                                       filename="evidence_organization_name"
+                                       string="đ - Minh chứng tổ chức" readonly="1"/>
+                                <field name="evidence_organization_name" invisible="1"/>
+                                <field name="evidence_team_cohesion" widget="binary"
+                                       filename="evidence_team_cohesion_name"
+                                       string="e - Minh chứng đoàn kết" readonly="1"/>
+                                <field name="evidence_team_cohesion_name" invisible="1"/>
                             </group>
                             <group>
                                 <field name="task_score" readonly="1" decoration-bf="1"/>

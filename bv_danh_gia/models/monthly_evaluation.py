@@ -70,7 +70,7 @@ class MonthlyEvaluation(models.Model):
         string='Điểm tiêu chí chung', compute='_compute_general_score',
         store=True, tracking=True)
 
-    # --- Tiêu chí kết quả nhiệm vụ (70 điểm) ---
+    # --- Tiêu chí kết quả nhiệm vụ (70 điểm) — NV tự chấm ---
     task_line_ids = fields.One2many(
         'bv.evaluation.task.line', 'evaluation_id',
         string='Nhiệm vụ được giao')
@@ -86,6 +86,41 @@ class MonthlyEvaluation(models.Model):
     pct_team_cohesion = fields.Float(
         string='e - % Năng lực tập hợp, đoàn kết',
         help='Chỉ áp dụng cho viên chức giữ chức vụ lãnh đạo, quản lý')
+
+    # --- Điểm trưởng khoa/phòng chấm KQTHNV ---
+    dept_pct_quantity = fields.Float(string='a - % Số lượng (TP chấm)', tracking=True)
+    dept_pct_quality = fields.Float(string='b - % Chất lượng (TP chấm)', tracking=True)
+    dept_pct_progress = fields.Float(string='c - % Tiến độ (TP chấm)', tracking=True)
+    dept_pct_field_result = fields.Float(
+        string='d - % Kết quả lĩnh vực (TP chấm)',
+        help='Chỉ áp dụng cho viên chức giữ chức vụ lãnh đạo, quản lý')
+    dept_pct_organization = fields.Float(
+        string='đ - % Tổ chức triển khai (TP chấm)',
+        help='Chỉ áp dụng cho viên chức giữ chức vụ lãnh đạo, quản lý')
+    dept_pct_team_cohesion = fields.Float(
+        string='e - % Đoàn kết (TP chấm)',
+        help='Chỉ áp dụng cho viên chức giữ chức vụ lãnh đạo, quản lý')
+
+    # --- Tài liệu minh chứng KQTHNV (PDF) ---
+    evidence_quantity = fields.Binary(
+        string='Minh chứng % Số lượng', attachment=True)
+    evidence_quantity_name = fields.Char(string='Tên file minh chứng số lượng')
+    evidence_quality = fields.Binary(
+        string='Minh chứng % Chất lượng', attachment=True)
+    evidence_quality_name = fields.Char(string='Tên file minh chứng chất lượng')
+    evidence_progress = fields.Binary(
+        string='Minh chứng % Tiến độ', attachment=True)
+    evidence_progress_name = fields.Char(string='Tên file minh chứng tiến độ')
+    evidence_field_result = fields.Binary(
+        string='Minh chứng kết quả lĩnh vực', attachment=True)
+    evidence_field_result_name = fields.Char(string='Tên file minh chứng kết quả lĩnh vực')
+    evidence_organization = fields.Binary(
+        string='Minh chứng tổ chức triển khai', attachment=True)
+    evidence_organization_name = fields.Char(string='Tên file minh chứng tổ chức')
+    evidence_team_cohesion = fields.Binary(
+        string='Minh chứng đoàn kết', attachment=True)
+    evidence_team_cohesion_name = fields.Char(string='Tên file minh chứng đoàn kết')
+
     task_score = fields.Float(
         string='Điểm tiêu chí KQTHNV', compute='_compute_task_score',
         store=True, tracking=True)
@@ -147,22 +182,47 @@ class MonthlyEvaluation(models.Model):
             rec.general_score = sum(rec.criteria_line_ids.mapped('final_score'))
 
     @api.depends(
-        'is_manager',
+        'is_manager', 'state',
         'pct_quantity', 'pct_quality', 'pct_progress',
         'pct_field_result', 'pct_organization', 'pct_team_cohesion',
+        'dept_pct_quantity', 'dept_pct_quality', 'dept_pct_progress',
+        'dept_pct_field_result', 'dept_pct_organization', 'dept_pct_team_cohesion',
         'task_score_max')
     def _compute_task_score(self):
         for rec in self:
             max_pts = rec.task_score_max or 70.0
-            if rec.is_manager:
-                total_pct = (
-                    rec.pct_quantity + rec.pct_quality + rec.pct_progress
-                    + rec.pct_field_result + rec.pct_organization + rec.pct_team_cohesion
+            # Sau khi trưởng phòng duyệt, ưu tiên dùng điểm TP nếu đã nhập
+            use_dept = (
+                rec.state in ('dept_approved', 'hr_reviewed', 'approved')
+                and (
+                    rec.dept_pct_quantity or rec.dept_pct_quality or rec.dept_pct_progress
+                    or rec.dept_pct_field_result or rec.dept_pct_organization
+                    or rec.dept_pct_team_cohesion
                 )
-                rec.task_score = (total_pct / 6.0) * max_pts / 100.0
+            )
+            if use_dept:
+                if rec.is_manager:
+                    total_pct = (
+                        rec.dept_pct_quantity + rec.dept_pct_quality + rec.dept_pct_progress
+                        + rec.dept_pct_field_result + rec.dept_pct_organization
+                        + rec.dept_pct_team_cohesion
+                    )
+                    rec.task_score = (total_pct / 6.0) * max_pts / 100.0
+                else:
+                    total_pct = (
+                        rec.dept_pct_quantity + rec.dept_pct_quality + rec.dept_pct_progress
+                    )
+                    rec.task_score = (total_pct / 3.0) * max_pts / 100.0
             else:
-                total_pct = rec.pct_quantity + rec.pct_quality + rec.pct_progress
-                rec.task_score = (total_pct / 3.0) * max_pts / 100.0
+                if rec.is_manager:
+                    total_pct = (
+                        rec.pct_quantity + rec.pct_quality + rec.pct_progress
+                        + rec.pct_field_result + rec.pct_organization + rec.pct_team_cohesion
+                    )
+                    rec.task_score = (total_pct / 6.0) * max_pts / 100.0
+                else:
+                    total_pct = rec.pct_quantity + rec.pct_quality + rec.pct_progress
+                    rec.task_score = (total_pct / 3.0) * max_pts / 100.0
 
     @api.depends('template_id', 'template_id.task_score_weight',
                  'template_id.total_general_score')
@@ -285,6 +345,26 @@ class MonthlyEvaluation(models.Model):
                     ('pct_field_result', 'd - % Kết quả lĩnh vực'),
                     ('pct_organization', 'đ - % Khả năng tổ chức'),
                     ('pct_team_cohesion', 'e - % Năng lực đoàn kết'),
+                ]
+            for fname, label in fields_check:
+                val = getattr(rec, fname)
+                if val < 0 or val > 100:
+                    raise ValidationError(f'{label} phải từ 0% đến 100%')
+
+    @api.constrains('dept_pct_quantity', 'dept_pct_quality', 'dept_pct_progress',
+                     'dept_pct_field_result', 'dept_pct_organization', 'dept_pct_team_cohesion')
+    def _check_dept_pct_range(self):
+        for rec in self:
+            fields_check = [
+                ('dept_pct_quantity', 'a - % Số lượng (TP chấm)'),
+                ('dept_pct_quality', 'b - % Chất lượng (TP chấm)'),
+                ('dept_pct_progress', 'c - % Tiến độ (TP chấm)'),
+            ]
+            if rec.is_manager:
+                fields_check += [
+                    ('dept_pct_field_result', 'd - % Kết quả lĩnh vực (TP chấm)'),
+                    ('dept_pct_organization', 'đ - % Tổ chức triển khai (TP chấm)'),
+                    ('dept_pct_team_cohesion', 'e - % Đoàn kết (TP chấm)'),
                 ]
             for fname, label in fields_check:
                 val = getattr(rec, fname)

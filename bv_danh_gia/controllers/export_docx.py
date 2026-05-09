@@ -239,49 +239,43 @@ class ExportDocxController(http.Controller):
         doc.add_paragraph(f'1. Điểm tiêu chí chung: {_fmt_score(evaluation.general_score)}')
         doc.add_paragraph('2. Điểm tiêu chí kết quả thực hiện nhiệm vụ:')
 
-        # Nhãn a, b, c dùng mô tả đầy đủ theo mẫu
-        doc.add_paragraph(
-            f'   - a là điểm tỷ lệ phần trăm (%) về số lượng kết quả '
-                f'thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_quantity)}%'
-        )
-        doc.add_paragraph(
-            f'   - b là điểm tỷ lệ phần trăm (%) về chất lượng kết quả '
-                f'thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_quality)}%'
-        )
-        doc.add_paragraph(
-            f'   - c là điểm tỷ lệ phần trăm (%) về tiến độ kết quả '
-                f'thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_progress)}%'
-        )
+        def _fmt_evidence_name(field_prefix):
+            return getattr(evaluation, field_prefix + '_name', '') or ''
 
-        if evaluation.is_manager:
+        basic_criteria = [
+            ('a', 'số lượng kết quả thực hiện nhiệm vụ',
+             'pct_quantity', 'dept_pct_quantity', 'evidence_quantity'),
+            ('b', 'chất lượng kết quả thực hiện nhiệm vụ',
+             'pct_quality', 'dept_pct_quality', 'evidence_quality'),
+            ('c', 'tiến độ kết quả thực hiện nhiệm vụ',
+             'pct_progress', 'dept_pct_progress', 'evidence_progress'),
+        ]
+        manager_criteria = [
+            ('d', 'kết quả hoạt động của lĩnh vực được giao lãnh đạo, quản lý, phụ trách',
+             'pct_field_result', 'dept_pct_field_result', 'evidence_field_result'),
+            ('đ', 'khả năng tổ chức triển khai thực hiện nhiệm vụ',
+             'pct_organization', 'dept_pct_organization', 'evidence_organization'),
+            ('e', 'năng lực tập hợp, đoàn kết công chức thuộc phạm vi quản lý',
+             'pct_team_cohesion', 'dept_pct_team_cohesion', 'evidence_team_cohesion'),
+        ]
+        all_criteria = basic_criteria + (manager_criteria if evaluation.is_manager else [])
+        for lbl, desc, nv_f, tp_f, ev_f in all_criteria:
+            nv_val = _fmt_score(getattr(evaluation, nv_f, 0) or 0)
+            tp_val = getattr(evaluation, tp_f, 0) or 0
+            ev_name = _fmt_evidence_name(ev_f)
+            tp_part = f'; TP chấm: {_fmt_score(tp_val)}%' if tp_val else ''
+            ev_part = f'; Minh chứng: {ev_name}' if ev_name else ''
             doc.add_paragraph(
-                f'   - d là điểm tỷ lệ phần trăm (%) về kết quả hoạt động của '
-                f'lĩnh vực được giao lãnh đạo, quản lý, phụ trách: '
-                f'{_fmt_score(evaluation.pct_field_result)}%'
-            )
-            doc.add_paragraph(
-                f'   - đ là điểm tỷ lệ phần trăm (%) về khả năng tổ chức '
-                f'triển khai thực hiện nhiệm vụ: {_fmt_score(evaluation.pct_organization)}%'
-            )
-            doc.add_paragraph(
-                f'   - e là điểm tỷ lệ phần trăm (%) về năng lực tập hợp, '
-                f'đoàn kết công chức thuộc phạm vi quản lý: '
-                f'{_fmt_score(evaluation.pct_team_cohesion)}%'
+                f'   - {lbl} là điểm tỷ lệ phần trăm (%) về {desc}: '
+                f'NV tự chấm {nv_val}%{tp_part}{ev_part}'
             )
 
-        # Hai dòng điểm KQTHNV: một cho không giữ chức vụ, một cho giữ chức vụ
-        if not evaluation.is_manager:
-            doc.add_paragraph(
-                f'   Điểm tiêu chí kết quả thực hiện nhiệm vụ '
-                f'(đối với CBCCVC không giữ chức vụ): '
-                f'{_fmt_score(evaluation.task_score)} điểm'
-            )
-        else:
-            doc.add_paragraph(
-                f'   Điểm tiêu chí kết quả thực hiện nhiệm vụ '
-                f'(đối với CBCCVC giữ chức vụ): '
-                f'{_fmt_score(evaluation.task_score)} điểm'
-            )
+        role_label = 'giữ chức vụ' if evaluation.is_manager else 'không giữ chức vụ'
+        doc.add_paragraph(
+            f'   Điểm tiêu chí kết quả thực hiện nhiệm vụ '
+            f'(đối với CBCCVC {role_label}): '
+            f'{_fmt_score(evaluation.task_score)} điểm'
+        )
 
         p_total = doc.add_paragraph()
         run = p_total.add_run(

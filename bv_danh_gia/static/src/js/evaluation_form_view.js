@@ -34,6 +34,10 @@ export class EvaluationFormView extends Component {
             filledCount: 0,
             totalCriteria: 0,
             canEditDept: false,
+            evidenceNames: {},
+            strengths: '',
+            weaknesses: '',
+            authorityComment: '',
         });
 
         onWillStart(async () => {
@@ -55,12 +59,28 @@ export class EvaluationFormView extends Component {
             'classification', 'strengths', 'weaknesses', 'authority_comment',
             'pct_quantity', 'pct_quality', 'pct_progress',
             'pct_field_result', 'pct_organization', 'pct_team_cohesion',
+            'dept_pct_quantity', 'dept_pct_quality', 'dept_pct_progress',
+            'dept_pct_field_result', 'dept_pct_organization', 'dept_pct_team_cohesion',
+            'evidence_quantity_name', 'evidence_quality_name', 'evidence_progress_name',
+            'evidence_field_result_name', 'evidence_organization_name', 'evidence_team_cohesion_name',
             'criteria_line_ids', 'display_name',
         ]);
         this.state.record = record;
         this.state.generalMax = record.general_score_max || 30;
         this.state.taskMax = record.task_score_max || 70;
         this.state.canEditDept = !!record.can_edit_dept_score;
+        this.state.strengths = record.strengths || '';
+        this.state.weaknesses = record.weaknesses || '';
+        this.state.authorityComment = record.authority_comment || '';
+        // Populate evidence file names
+        this.state.evidenceNames = {
+            evidence_quantity: record.evidence_quantity_name || '',
+            evidence_quality: record.evidence_quality_name || '',
+            evidence_progress: record.evidence_progress_name || '',
+            evidence_field_result: record.evidence_field_result_name || '',
+            evidence_organization: record.evidence_organization_name || '',
+            evidence_team_cohesion: record.evidence_team_cohesion_name || '',
+        };
 
         const lineIds = record.criteria_line_ids;
         if (lineIds && lineIds.length > 0) {
@@ -141,14 +161,49 @@ export class EvaluationFormView extends Component {
     _buildTaskFields() {
         const r = this.state.record;
         if (!r) return;
-        // All 6 fields defined; managerOnly=true fields visible only when is_manager toggled
         this.state.task_fields = [
-            { key: 'pct_quantity',    label: 'a) Số lượng thực hiện chỉ tiêu, nhiệm vụ chuyên môn', value: r.pct_quantity || 0,    managerOnly: false },
-            { key: 'pct_quality',     label: 'b) Chất lượng kết quả thực hiện nhiệm vụ được giao',  value: r.pct_quality || 0,     managerOnly: false },
-            { key: 'pct_progress',    label: 'c) Tiến độ thực hiện',                                  value: r.pct_progress || 0,    managerOnly: false },
-            { key: 'pct_field_result',label: 'd) Kết quả hoạt động lĩnh vực phụ trách',              value: r.pct_field_result || 0,managerOnly: true  },
-            { key: 'pct_organization',label: 'đ) Khả năng tổ chức triển khai thực hiện',             value: r.pct_organization || 0,managerOnly: true  },
-            { key: 'pct_team_cohesion',label: 'e) Năng lực tập hợp đoàn kết',                        value: r.pct_team_cohesion || 0,managerOnly: true },
+            {
+                key: 'pct_quantity', deptPctKey: 'dept_pct_quantity',
+                evidenceKey: 'evidence_quantity', evidenceNameKey: 'evidence_quantity_name',
+                label: 'a) Số lượng thực hiện chỉ tiêu, nhiệm vụ chuyên môn',
+                value: r.pct_quantity || 0, deptPctValue: r.dept_pct_quantity || 0,
+                managerOnly: false,
+            },
+            {
+                key: 'pct_quality', deptPctKey: 'dept_pct_quality',
+                evidenceKey: 'evidence_quality', evidenceNameKey: 'evidence_quality_name',
+                label: 'b) Chất lượng kết quả thực hiện nhiệm vụ được giao',
+                value: r.pct_quality || 0, deptPctValue: r.dept_pct_quality || 0,
+                managerOnly: false,
+            },
+            {
+                key: 'pct_progress', deptPctKey: 'dept_pct_progress',
+                evidenceKey: 'evidence_progress', evidenceNameKey: 'evidence_progress_name',
+                label: 'c) Tiến độ thực hiện',
+                value: r.pct_progress || 0, deptPctValue: r.dept_pct_progress || 0,
+                managerOnly: false,
+            },
+            {
+                key: 'pct_field_result', deptPctKey: 'dept_pct_field_result',
+                evidenceKey: 'evidence_field_result', evidenceNameKey: 'evidence_field_result_name',
+                label: 'd) Kết quả hoạt động lĩnh vực phụ trách',
+                value: r.pct_field_result || 0, deptPctValue: r.dept_pct_field_result || 0,
+                managerOnly: true,
+            },
+            {
+                key: 'pct_organization', deptPctKey: 'dept_pct_organization',
+                evidenceKey: 'evidence_organization', evidenceNameKey: 'evidence_organization_name',
+                label: 'đ) Khả năng tổ chức triển khai thực hiện',
+                value: r.pct_organization || 0, deptPctValue: r.dept_pct_organization || 0,
+                managerOnly: true,
+            },
+            {
+                key: 'pct_team_cohesion', deptPctKey: 'dept_pct_team_cohesion',
+                evidenceKey: 'evidence_team_cohesion', evidenceNameKey: 'evidence_team_cohesion_name',
+                label: 'e) Năng lực tập hợp đoàn kết',
+                value: r.pct_team_cohesion || 0, deptPctValue: r.dept_pct_team_cohesion || 0,
+                managerOnly: true,
+            },
         ];
     }
 
@@ -205,6 +260,42 @@ export class EvaluationFormView extends Component {
         this._recalculate();
     }
 
+    /** Dept manager enters % for a KQTHNV criterion */
+    updateDeptTaskPct(deptPctKey, rawValue) {
+        if (!this.state.canEditDept) return;
+        const numVal = Math.min(100, Math.max(0, parseFloat(rawValue) || 0));
+        for (const f of this.state.task_fields) {
+            if (f.deptPctKey === deptPctKey) f.deptPctValue = numVal;
+        }
+        this._recalculate();
+    }
+
+    /** Upload a PDF evidence file for a KQTHNV criterion */
+    async uploadEvidence(evidenceKey, evidenceNameKey, ev) {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        if (file.type !== 'application/pdf') {
+            this.notification.add('Chỉ chấp nhận file PDF!', { type: 'warning' });
+            ev.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const base64 = e.target.result.split(',')[1];
+            try {
+                await this.orm.write('bv.monthly.evaluation', [this.evalId], {
+                    [evidenceKey]: base64,
+                    [evidenceNameKey]: file.name,
+                });
+                this.state.evidenceNames[evidenceKey] = file.name;
+                this.notification.add('Đã tải lên: ' + file.name, { type: 'success', sticky: false });
+            } catch (err) {
+                this.notification.add('Lỗi tải file: ' + (err.message || ''), { type: 'danger' });
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
     /** Toggle "đánh giá với tư cách lãnh đạo / quản lý" */
     toggleManager() {
         if (this.state.record && this.state.record.state !== 'draft') return;
@@ -232,20 +323,30 @@ export class EvaluationFormView extends Component {
         this.state.totalDeptGeneral = Math.round(deptGeneral * 10) / 10;
 
         // --- Phần II: KQTHNV ---
-        // Công thức: điểm KQTHNV = trung bình(pct_*) / 100 × taskMax
-        // Non-manager: 3 trường; Manager: 6 trường
         const isManager = this.state.record && this.state.record.is_manager;
         const activeFields = this.state.task_fields.filter(f => !f.managerOnly || isManager);
+
+        // NV task score (from pct_*)
         const pctSum = activeFields.reduce((sum, f) => sum + (parseFloat(f.value) || 0), 0);
         const pctAvg = activeFields.length > 0 ? pctSum / activeFields.length : 0;
-        const taskScore = Math.round((pctAvg / 100 * (this.state.taskMax || 70)) * 10) / 10;
+        const nvTaskScore = Math.round((pctAvg / 100 * (this.state.taskMax || 70)) * 10) / 10;
 
-        this.state.totalTask = taskScore;
-        // Total score uses dept score if any criteria has dept score (review phase),
-        // otherwise self score.
-        const useDept = deptGeneral > 0 && this.state.record && this.state.record.state !== 'draft';
-        const finalGeneral = useDept ? deptGeneral : generalScore;
-        this.state.totalScore = Math.round((finalGeneral + taskScore) * 10) / 10;
+        // TP task score (from dept_pct_*)
+        const deptPctSum = activeFields.reduce((sum, f) => sum + (parseFloat(f.deptPctValue) || 0), 0);
+        const deptPctAvg = activeFields.length > 0 ? deptPctSum / activeFields.length : 0;
+        const deptTaskScore = Math.round((deptPctAvg / 100 * (this.state.taskMax || 70)) * 10) / 10;
+
+        const hasDeptTaskInput = activeFields.some(f => (f.deptPctValue || 0) > 0);
+        const state = this.state.record && this.state.record.state;
+        const usesDeptTask = hasDeptTaskInput && (
+            this.state.canEditDept || (state && !['draft', 'submitted'].includes(state))
+        );
+        this.state.totalTask = usesDeptTask ? deptTaskScore : nvTaskScore;
+
+        // --- Tổng điểm ---
+        const useDeptGeneral = deptGeneral > 0 && state && state !== 'draft';
+        const finalGeneral = useDeptGeneral ? deptGeneral : generalScore;
+        this.state.totalScore = Math.round((finalGeneral + this.state.totalTask) * 10) / 10;
 
         total += activeFields.length;
         filled += activeFields.filter(f => f.value > 0).length;
@@ -332,6 +433,14 @@ export class EvaluationFormView extends Component {
                 for (const f of this.state.task_fields) {
                     vals[f.key] = parseFloat(f.value) || 0;
                 }
+                vals.strengths = this.state.strengths || '';
+                vals.weaknesses = this.state.weaknesses || '';
+            }
+            if (this.state.canEditDept) {
+                for (const f of this.state.task_fields) {
+                    vals[f.deptPctKey] = parseFloat(f.deptPctValue) || 0;
+                }
+                vals.authority_comment = this.state.authorityComment || '';
             }
             if (Object.keys(vals).length === 0) {
                 this.state.saving = false;

@@ -163,7 +163,7 @@
 
                     <!-- ═══ PHẦN II: KẾT QUẢ THỰC HIỆN NHIỆM VỤ ═══ -->
                     <div class="bv-part-divider">
-                        <span>PHẦN II — KẾT QUẢ THỰC HIỆN NHIỆM VỤ (<t t-esc="state.taskMax"/> điểm)</span>
+                        <span>PHẦN II — ĐIỂM KQTHNV (<t t-esc="state.taskMax"/> điểm)</span>
                     </div>
 
                     <!-- Toggle: chế độ lãnh đạo / quản lý -->
@@ -183,40 +183,94 @@
                     <div class="bv-card">
                         <div class="bv-section-header">
                             <span class="bv-section-badge">Phần II</span>
-                            <span class="bv-section-title">Kết quả thực hiện nhiệm vụ</span>
-                            <span class="bv-section-maxpts">Tối đa: 70 điểm · Nhập % hoàn thành</span>
+                            <span class="bv-section-title">Điểm kết quả thực hiện nhiệm vụ</span>
+                            <span class="bv-section-maxpts">Tối đa: <t t-esc="state.taskMax"/> điểm · Nhập % hoàn thành</span>
                         </div>
 
                         <!-- Formula note -->
                         <div style="background:#f5f3ee;padding:10px 24px;border-bottom:1px solid #eceae4;font-size:12px;color:#6b6760;">
-                            <i class="fa fa-info-circle"/> Điểm KQTHNV = Trung bình cộng các % nhập vào ÷ 100 × 70.
-                            Ví dụ: nhập 80% / 90% / 75% → trung bình 81.67% → điểm = 81.67 ÷ 100 × 70 = <strong>57.2 điểm</strong>.
+                            <i class="fa fa-info-circle"/> Điểm KQTHNV = Trung bình % ÷ 100 × <t t-esc="state.taskMax"/>.
+                            Ví dụ: 80% / 90% / 75% → TB 81,67% → <strong><t t-esc="Math.round(81.67/100*(state.taskMax||70)*10)/10"/> điểm</strong>.
                         </div>
 
                         <t t-foreach="state.task_fields" t-as="tf" t-key="tf.key">
                             <t t-if="!tf.managerOnly or (state.record and state.record.is_manager)">
                                 <div t-att-style="'border-bottom:1px solid #eceae4;padding:16px 24px;' + (tf.managerOnly ? 'background:#fafaf7;' : '')">
-                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                                    <!-- Nhãn tiêu chí -->
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
                                         <span t-if="tf.managerOnly"
                                               style="font-size:10px;background:#c9a84c;color:#fff;padding:2px 7px;border-radius:10px;font-weight:700;white-space:nowrap;">
                                             Lãnh đạo
                                         </span>
                                         <span style="font-weight:600;font-size:13.5px;flex:1;"><t t-esc="tf.label"/></span>
                                     </div>
-                                    <div style="display:flex;align-items:center;gap:12px;">
-                                        <input type="number" min="0" max="100" step="0.5"
-                                               t-att-value="tf.value"
-                                               t-att-disabled="isReadonly ? 'disabled' : undefined"
-                                               t-on-input="(ev) => this.updateTaskPct(tf.key, ev.target.value)"
-                                               style="width:90px;padding:7px 10px;border:1.5px solid #d8d4cc;border-radius:8px;font-size:15px;text-align:center;outline:none;"/>
-                                        <span style="font-size:13px;color:#6b6760;font-weight:600;">%</span>
-                                        <div style="flex:1;background:#eceae4;border-radius:6px;height:8px;overflow:hidden;">
-                                            <div t-att-style="'background:#0f2044;height:100%;width:' + Math.min(tf.value || 0, 100) + '%;transition:width 0.3s;'"/>
+
+                                    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+                                        <!-- NV tự chấm -->
+                                        <div style="min-width:160px;">
+                                            <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:600;">
+                                                <i class="fa fa-user"/> NV tự chấm
+                                            </div>
+                                            <div style="display:flex;align-items:center;gap:8px;">
+                                                <input type="number" min="0" max="100" step="0.5"
+                                                       t-att-value="tf.value"
+                                                       t-att-disabled="(state.record and state.record.state !== 'draft') ? 'disabled' : undefined"
+                                                       t-on-input="(ev) => this.updateTaskPct(tf.key, ev.target.value)"
+                                                       style="width:80px;padding:7px 10px;border:1.5px solid #d8d4cc;border-radius:8px;font-size:15px;text-align:center;outline:none;"/>
+                                                <span style="font-size:13px;color:#6b6760;font-weight:600;">%</span>
+                                            </div>
+                                            <div style="margin-top:6px;background:#eceae4;border-radius:4px;height:6px;width:120px;overflow:hidden;">
+                                                <div t-att-style="'background:#0f2044;height:100%;width:' + Math.min(tf.value || 0, 100) + '%;transition:width 0.3s;'"/>
+                                            </div>
                                         </div>
-                                        <span style="font-weight:700;color:#c9a84c;font-size:14px;min-width:48px;text-align:right;">
-                                            <t t-if="tf.value"><t t-esc="tf.value"/>%</t>
-                                            <t t-else="">—</t>
-                                        </span>
+
+                                        <!-- TP chấm (hiển thị khi đang ở chế độ TP, hoặc đã có điểm TP) -->
+                                        <t t-if="state.canEditDept or (tf.deptPctValue and tf.deptPctValue > 0)">
+                                            <div style="min-width:160px;">
+                                                <div style="font-size:11px;color:#c9a84c;margin-bottom:6px;font-weight:600;">
+                                                    <i class="fa fa-user-md"/> Trưởng khoa/Phòng chấm
+                                                </div>
+                                                <div style="display:flex;align-items:center;gap:8px;">
+                                                    <input type="number" min="0" max="100" step="0.5"
+                                                           t-att-value="tf.deptPctValue"
+                                                           t-att-disabled="state.canEditDept ? undefined : 'disabled'"
+                                                           t-on-input="(ev) => this.updateDeptTaskPct(tf.deptPctKey, ev.target.value)"
+                                                           style="width:80px;padding:7px 10px;border:1.5px solid #c9a84c;border-radius:8px;font-size:15px;text-align:center;outline:none;"/>
+                                                    <span style="font-size:13px;color:#6b6760;font-weight:600;">%</span>
+                                                </div>
+                                                <div style="margin-top:6px;background:#eceae4;border-radius:4px;height:6px;width:120px;overflow:hidden;">
+                                                    <div t-att-style="'background:#c9a84c;height:100%;width:' + Math.min(tf.deptPctValue || 0, 100) + '%;transition:width 0.3s;'"/>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <!-- Minh chứng PDF -->
+                                        <div style="min-width:160px;">
+                                            <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:600;">
+                                                <i class="fa fa-paperclip"/> Minh chứng PDF
+                                            </div>
+                                            <t t-if="state.record and state.record.state === 'draft'">
+                                                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:1.5px dashed #c9a84c;border-radius:8px;font-size:12px;color:#7a5e00;background:#fffdf5;">
+                                                    <i class="fa fa-upload"/>
+                                                    <span><t t-if="state.evidenceNames[tf.evidenceKey]">Đổi file</t><t t-else="">Chọn file</t></span>
+                                                    <input type="file" accept=".pdf" style="display:none"
+                                                           t-on-change="(ev) => this.uploadEvidence(tf.evidenceKey, tf.evidenceNameKey, ev)"/>
+                                                </label>
+                                                <t t-if="state.evidenceNames[tf.evidenceKey]">
+                                                    <div style="font-size:11px;color:#2d7a4f;margin-top:4px;">
+                                                        <i class="fa fa-file-pdf-o"/> <t t-esc="state.evidenceNames[tf.evidenceKey]"/>
+                                                    </div>
+                                                </t>
+                                            </t>
+                                            <t t-elif="state.evidenceNames[tf.evidenceKey]">
+                                                <span style="font-size:12px;color:#2d7a4f;">
+                                                    <i class="fa fa-file-pdf-o"/> <t t-esc="state.evidenceNames[tf.evidenceKey]"/>
+                                                </span>
+                                            </t>
+                                            <t t-else="">
+                                                <span style="font-size:11px;color:#aaa;font-style:italic;">Không có minh chứng</span>
+                                            </t>
+                                        </div>
                                     </div>
                                 </div>
                             </t>
@@ -230,6 +284,94 @@
                             <span style="font-size:18px;font-weight:700;color:#0f2044;">
                                 <t t-esc="state.totalTask"/> <span style="font-size:13px;color:#6b6760;">/ <t t-esc="state.taskMax"/> điểm</span>
                             </span>
+                        </div>
+                    </div>
+
+                    <!-- ═══ PHẦN III: TỔNG HỢP KẾT QUẢ & NHẬN XÉT ═══ -->
+                    <div class="bv-part-divider">
+                        <span>PHẦN III — TỔNG HỢP KẾT QUẢ &amp; NHẬN XÉT</span>
+                    </div>
+
+                    <div class="bv-card">
+                        <div class="bv-section-header">
+                            <span class="bv-section-badge">Kết quả</span>
+                            <span class="bv-section-title">Tổng hợp điểm &amp; nhận xét</span>
+                        </div>
+
+                        <!-- Bảng tổng hợp điểm -->
+                        <div class="bv-info-grid" style="padding:16px 20px;">
+                            <div>
+                                <div class="bv-field-label">Điểm Phần I – Tiêu chí chung</div>
+                                <div class="bv-field-value">
+                                    <t t-esc="state.totalGeneral"/> / <t t-esc="state.generalMax"/> điểm
+                                </div>
+                            </div>
+                            <div>
+                                <div class="bv-field-label">Điểm Phần II – KQTHNV</div>
+                                <div class="bv-field-value">
+                                    <t t-esc="state.totalTask"/> / <t t-esc="state.taskMax"/> điểm
+                                </div>
+                            </div>
+                            <div class="bv-full">
+                                <div class="bv-field-label" style="font-size:13px;font-weight:700;">Tổng điểm</div>
+                                <div class="bv-field-value" style="font-size:1.5em;font-weight:800;color:#c9a84c;">
+                                    <t t-esc="state.totalScore"/> / 100
+                                </div>
+                            </div>
+                            <div class="bv-full">
+                                <div class="bv-field-label">Xếp loại</div>
+                                <div t-att-class="'bv-field-value bv-score-label ' + classificationDisplay.css"
+                                     style="font-size:1.1em;font-weight:700;">
+                                    <t t-esc="classificationDisplay.label"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nhận xét -->
+                        <div style="border-top:1px solid #eceae4;padding:16px 20px;">
+                            <div class="bv-section-header" style="margin-bottom:12px;">
+                                <span class="bv-section-badge">Nhận xét</span>
+                                <span class="bv-section-title">Ưu điểm, hạn chế, nhận xét</span>
+                            </div>
+
+                            <div style="margin-bottom:12px;">
+                                <div class="bv-field-label" style="margin-bottom:6px;">Ưu điểm, thành tích nổi bật</div>
+                                <textarea class="bv-remarks-input" rows="3"
+                                          t-att-value="state.strengths"
+                                          t-att-disabled="isReadonly ? 'disabled' : undefined"
+                                          t-on-input="(ev) => { this.state.strengths = ev.target.value; }"
+                                          placeholder="Nêu ưu điểm, thành tích nổi bật trong tháng..."/>
+                            </div>
+
+                            <div style="margin-bottom:12px;">
+                                <div class="bv-field-label" style="margin-bottom:6px;">Hạn chế, khuyết điểm</div>
+                                <textarea class="bv-remarks-input" rows="3"
+                                          t-att-value="state.weaknesses"
+                                          t-att-disabled="isReadonly ? 'disabled' : undefined"
+                                          t-on-input="(ev) => { this.state.weaknesses = ev.target.value; }"
+                                          placeholder="Nêu những hạn chế, tồn tại cần khắc phục..."/>
+                            </div>
+
+                            <!-- Ý kiến TP (chỉ TP mới nhập, NV chỉ xem) -->
+                            <t t-if="state.canEditDept">
+                                <div>
+                                    <div class="bv-field-label" style="margin-bottom:6px;color:#7a5e00;">
+                                        <i class="fa fa-user-md"/> Ý kiến nhận xét của Trưởng khoa/Phòng
+                                    </div>
+                                    <textarea class="bv-remarks-input" rows="3"
+                                              t-att-value="state.authorityComment"
+                                              t-on-input="(ev) => { this.state.authorityComment = ev.target.value; }"
+                                              placeholder="Nhận xét, đánh giá của trưởng khoa/phòng..."/>
+                                </div>
+                            </t>
+                            <t t-elif="state.record and state.record.authority_comment">
+                                <div>
+                                    <div class="bv-field-label" style="margin-bottom:6px;">Ý kiến Trưởng khoa/Phòng</div>
+                                    <div style="padding:10px 14px;background:#f5f3ee;border-radius:8px;font-size:13px;color:#1e1e1e;line-height:1.6;">
+                                        <t t-esc="state.record.authority_comment"/>
+                                    </div>
+                                </div>
+                            </t>
                         </div>
                     </div>
 

@@ -562,3 +562,27 @@ input[type="number"]:focus {
   cursor: not-allowed !important;
   pointer-events: none;
 }
+
+/* Textarea nhận xét */
+.bv-remarks-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #d8d4cc;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--bv-navy);
+  background: #fff;
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+  transition: border-color 0.2s;
+}
+.bv-remarks-input:focus {
+  border-color: var(--bv-gold);
+}
+.bv-remarks-input:disabled {
+  background: #f5f3ee;
+  color: var(--bv-text-muted);
+  cursor: not-allowed;
+}

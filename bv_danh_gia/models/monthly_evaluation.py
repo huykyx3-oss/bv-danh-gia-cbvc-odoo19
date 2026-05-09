@@ -1,5 +1,6 @@
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
+import base64
 import datetime
 
 MONTHS = [
@@ -70,6 +71,20 @@ class MonthlyEvaluation(models.Model):
         string='Điểm tiêu chí chung', compute='_compute_general_score',
         store=True, tracking=True)
 
+    # --- Nhãn tiêu chí KQTHNV (đọc từ template, fallback chuỗi mặc định) ---
+    task_label_quantity = fields.Char(
+        related='template_id.task_label_quantity', string='Nhãn a', readonly=True)
+    task_label_quality = fields.Char(
+        related='template_id.task_label_quality', string='Nhãn b', readonly=True)
+    task_label_progress = fields.Char(
+        related='template_id.task_label_progress', string='Nhãn c', readonly=True)
+    task_label_field_result = fields.Char(
+        related='template_id.task_label_field_result', string='Nhãn d', readonly=True)
+    task_label_organization = fields.Char(
+        related='template_id.task_label_organization', string='Nhãn đ', readonly=True)
+    task_label_team_cohesion = fields.Char(
+        related='template_id.task_label_team_cohesion', string='Nhãn e', readonly=True)
+
     # --- Tiêu chí kết quả nhiệm vụ (70 điểm) — NV tự chấm ---
     task_line_ids = fields.One2many(
         'bv.evaluation.task.line', 'evaluation_id',
@@ -135,6 +150,17 @@ class MonthlyEvaluation(models.Model):
         compute='_compute_score_maxes', store=True,
         help='Lấy từ biểu mẫu đánh giá; mặc định 70 nếu không có biểu mẫu')
 
+    # --- Điểm NV tự chấm (chỉ đọc, để so sánh) ---
+    general_score_nv = fields.Float(
+        string='Điểm Phần I (NV tự chấm)',
+        compute='_compute_nv_scores', store=True)
+    task_score_nv = fields.Float(
+        string='Điểm KQTHNV (NV tự chấm)',
+        compute='_compute_nv_scores', store=True)
+    total_score_nv = fields.Float(
+        string='Tổng điểm NV tự chấm',
+        compute='_compute_nv_scores', store=True)
+
     # --- Tổng điểm ---
     total_score = fields.Float(
         string='Tổng điểm', compute='_compute_total_score',
@@ -191,9 +217,9 @@ class MonthlyEvaluation(models.Model):
     def _compute_task_score(self):
         for rec in self:
             max_pts = rec.task_score_max or 70.0
-            # Sau khi trưởng phòng duyệt, ưu tiên dùng điểm TP nếu đã nhập
+            # Khi TK đang chấm (submitted) hoặc sau duyệt: dùng điểm TK nếu đã nhập
             use_dept = (
-                rec.state in ('dept_approved', 'hr_reviewed', 'approved')
+                rec.state in ('submitted', 'dept_approved', 'hr_reviewed', 'approved')
                 and (
                     rec.dept_pct_quantity or rec.dept_pct_quality or rec.dept_pct_progress
                     or rec.dept_pct_field_result or rec.dept_pct_organization
@@ -223,6 +249,28 @@ class MonthlyEvaluation(models.Model):
                 else:
                     total_pct = rec.pct_quantity + rec.pct_quality + rec.pct_progress
                     rec.task_score = (total_pct / 3.0) * max_pts / 100.0
+
+    @api.depends(
+        'criteria_line_ids.self_score',
+        'is_manager',
+        'pct_quantity', 'pct_quality', 'pct_progress',
+        'pct_field_result', 'pct_organization', 'pct_team_cohesion',
+        'task_score_max',
+    )
+    def _compute_nv_scores(self):
+        for rec in self:
+            rec.general_score_nv = sum(rec.criteria_line_ids.mapped('self_score'))
+            max_pts = rec.task_score_max or 70.0
+            if rec.is_manager:
+                total_pct = (
+                    rec.pct_quantity + rec.pct_quality + rec.pct_progress
+                    + rec.pct_field_result + rec.pct_organization + rec.pct_team_cohesion
+                )
+                rec.task_score_nv = (total_pct / 6.0) * max_pts / 100.0
+            else:
+                total_pct = rec.pct_quantity + rec.pct_quality + rec.pct_progress
+                rec.task_score_nv = (total_pct / 3.0) * max_pts / 100.0
+            rec.total_score_nv = rec.general_score_nv + rec.task_score_nv
 
     @api.depends('template_id', 'template_id.task_score_weight',
                  'template_id.total_general_score')
@@ -350,6 +398,47 @@ class MonthlyEvaluation(models.Model):
                 val = getattr(rec, fname)
                 if val < 0 or val > 100:
                     raise ValidationError(f'{label} phải từ 0% đến 100%')
+
+    @api.constrains(
+        'evidence_quantity', 'evidence_quantity_name',
+        'evidence_quality', 'evidence_quality_name',
+        'evidence_progress', 'evidence_progress_name',
+        'evidence_field_result', 'evidence_field_result_name',
+        'evidence_organization', 'evidence_organization_name',
+        'evidence_team_cohesion', 'evidence_team_cohesion_name',
+    )
+    def _check_evidence_pdf(self):
+        pairs = [
+            ('evidence_quantity', 'evidence_quantity_name', 'a – Số lượng'),
+            ('evidence_quality', 'evidence_quality_name', 'b – Chất lượng'),
+            ('evidence_progress', 'evidence_progress_name', 'c – Tiến độ'),
+            ('evidence_field_result', 'evidence_field_result_name', 'd – Kết quả lĩnh vực'),
+            ('evidence_organization', 'evidence_organization_name', 'đ – Tổ chức triển khai'),
+            ('evidence_team_cohesion', 'evidence_team_cohesion_name', 'e – Đoàn kết'),
+        ]
+        for rec in self:
+            for fbin, fname, label in pairs:
+                data = getattr(rec, fbin)
+                name = (getattr(rec, fname) or '').strip()
+                if not data:
+                    continue
+                if not name.lower().endswith('.pdf'):
+                    raise ValidationError(
+                        f'Minh chứng "{label}": chỉ chấp nhận file PDF (.pdf).\n'
+                        f'File đang chọn: "{name or "(không có tên)"}".\n'
+                        'Vui lòng chọn lại file có định dạng PDF.'
+                    )
+                try:
+                    raw = base64.b64decode(data)
+                    if not raw.startswith(b'%PDF'):
+                        raise ValidationError(
+                            f'Minh chứng "{label}": nội dung file không phải PDF hợp lệ. '
+                            'Vui lòng chọn đúng file PDF.'
+                        )
+                except ValidationError:
+                    raise
+                except Exception:
+                    pass  # decode error handled by filename check above
 
     @api.constrains('dept_pct_quantity', 'dept_pct_quality', 'dept_pct_progress',
                      'dept_pct_field_result', 'dept_pct_organization', 'dept_pct_team_cohesion')

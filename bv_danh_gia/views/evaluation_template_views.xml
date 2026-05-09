@@ -52,6 +52,30 @@
                     </group>
 
                     <notebook>
+                        <page string="Nhãn tiêu chí KQTHNV"
+                              groups="bv_danh_gia.group_evaluation_hr">
+                            <div class="alert alert-info" style="margin-bottom:10px;">
+                                <strong>Tùy chỉnh tên tiêu chí KQTHNV:</strong>
+                                Phòng TCCB có thể đổi tên 6 tiêu chí KQTHNV cho biểu mẫu này.
+                                Tên mới sẽ hiển thị trên phiếu đánh giá và giao diện nhập liệu.
+                            </div>
+                            <group string="Tiêu chí cơ bản (tất cả CBVC)">
+                                <field name="task_label_quantity"
+                                       placeholder="Số lượng công việc"/>
+                                <field name="task_label_quality"
+                                       placeholder="Chất lượng công việc"/>
+                                <field name="task_label_progress"
+                                       placeholder="Tiến độ hoàn thành"/>
+                            </group>
+                            <group string="Tiêu chí lãnh đạo, quản lý">
+                                <field name="task_label_field_result"
+                                       placeholder="Kết quả lĩnh vực được giao"/>
+                                <field name="task_label_organization"
+                                       placeholder="Khả năng tổ chức triển khai"/>
+                                <field name="task_label_team_cohesion"
+                                       placeholder="Năng lực tập hợp, đoàn kết"/>
+                            </group>
+                        </page>
                         <page string="Tiêu chí đánh giá">
                             <div class="alert alert-info" style="margin-bottom:10px;">
                                 <strong>Hướng dẫn nhập tiêu chí:</strong>

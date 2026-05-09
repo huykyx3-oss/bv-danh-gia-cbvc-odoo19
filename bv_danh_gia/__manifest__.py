@@ -1,6 +1,6 @@
 {
     'name': 'Đánh giá xếp loại cán bộ, viên chức',
-    'version': '19.0.1.4.0',
+    'version': '19.0.1.6.0',
     'category': 'Human Resources',
     'summary': 'Hệ thống tự đánh giá, xếp loại chất lượng CBVC bệnh viện theo QĐ 06/2026/QĐ-UBND',
     'description': """
@@ -47,6 +47,7 @@
     'assets': {
         'web.assets_backend': [
             'bv_danh_gia/static/src/css/evaluation_form.css',
+            'bv_danh_gia/static/src/css/monthly_evaluation_form.css',
             'bv_danh_gia/static/src/js/notification_service.js',
             'bv_danh_gia/static/src/js/evaluation_form_view.js',
             'bv_danh_gia/static/src/js/dashboard.js',

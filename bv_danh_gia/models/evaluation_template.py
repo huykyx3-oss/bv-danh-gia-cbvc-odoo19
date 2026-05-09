@@ -39,6 +39,20 @@ class EvaluationTemplate(models.Model):
         string='Trọng số điểm KQTHNV', default=70.0,
         help='Điểm tối đa cho phần kết quả thực hiện nhiệm vụ')
 
+    # Tên tiêu chí KQTHNV — TCCB có thể đổi tên riêng cho biểu mẫu này
+    task_label_quantity = fields.Char(string='a – Tên tiêu chí Số lượng',
+                                       default='Số lượng công việc')
+    task_label_quality = fields.Char(string='b – Tên tiêu chí Chất lượng',
+                                      default='Chất lượng công việc')
+    task_label_progress = fields.Char(string='c – Tên tiêu chí Tiến độ',
+                                       default='Tiến độ hoàn thành')
+    task_label_field_result = fields.Char(string='d – Tên tiêu chí Kết quả lĩnh vực',
+                                           default='Kết quả lĩnh vực được giao')
+    task_label_organization = fields.Char(string='đ – Tên tiêu chí Tổ chức triển khai',
+                                           default='Khả năng tổ chức triển khai')
+    task_label_team_cohesion = fields.Char(string='e – Tên tiêu chí Đoàn kết',
+                                            default='Năng lực tập hợp, đoàn kết')
+
     # Workflow configuration per template
     workflow_steps = fields.Selection([
         ('full', 'Đầy đủ: NV → Trưởng khoa → TCCB → BGĐ'),

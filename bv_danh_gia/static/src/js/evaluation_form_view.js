@@ -28,6 +28,9 @@ export class EvaluationFormView extends Component {
             totalDeptGeneral: 0,
             totalTask: 0,
             totalScore: 0,
+            totalGeneralNv: 0,
+            totalTaskNv: 0,
+            totalScoreNv: 0,
             generalMax: 30,
             taskMax: 70,
             classification: '',
@@ -54,6 +57,7 @@ export class EvaluationFormView extends Component {
         const [record] = await this.orm.read('bv.monthly.evaluation', [this.evalId], [
             'employee_id', 'department_id', 'job_id', 'month', 'year',
             'is_manager', 'state', 'general_score', 'task_score', 'total_score',
+            'general_score_nv', 'task_score_nv', 'total_score_nv',
             'general_score_max', 'task_score_max',
             'can_edit_dept_score',
             'classification', 'strengths', 'weaknesses', 'authority_comment',
@@ -63,6 +67,8 @@ export class EvaluationFormView extends Component {
             'dept_pct_field_result', 'dept_pct_organization', 'dept_pct_team_cohesion',
             'evidence_quantity_name', 'evidence_quality_name', 'evidence_progress_name',
             'evidence_field_result_name', 'evidence_organization_name', 'evidence_team_cohesion_name',
+            'task_label_quantity', 'task_label_quality', 'task_label_progress',
+            'task_label_field_result', 'task_label_organization', 'task_label_team_cohesion',
             'criteria_line_ids', 'display_name',
         ]);
         this.state.record = record;
@@ -72,6 +78,10 @@ export class EvaluationFormView extends Component {
         this.state.strengths = record.strengths || '';
         this.state.weaknesses = record.weaknesses || '';
         this.state.authorityComment = record.authority_comment || '';
+        // NV-only totals for comparison in Part III
+        this.state.totalGeneralNv = Math.round((record.general_score_nv || 0) * 10) / 10;
+        this.state.totalTaskNv = Math.round((record.task_score_nv || 0) * 10) / 10;
+        this.state.totalScoreNv = Math.round((record.total_score_nv || 0) * 10) / 10;
         // Populate evidence file names
         this.state.evidenceNames = {
             evidence_quantity: record.evidence_quantity_name || '',
@@ -161,46 +171,48 @@ export class EvaluationFormView extends Component {
     _buildTaskFields() {
         const r = this.state.record;
         if (!r) return;
+        // Use template labels if available, fall back to sensible defaults
+        const lbl = (key, fallback) => r[key] || fallback;
         this.state.task_fields = [
             {
                 key: 'pct_quantity', deptPctKey: 'dept_pct_quantity',
                 evidenceKey: 'evidence_quantity', evidenceNameKey: 'evidence_quantity_name',
-                label: 'a) Số lượng thực hiện chỉ tiêu, nhiệm vụ chuyên môn',
+                label: `a) ${lbl('task_label_quantity', 'Số lượng thực hiện chỉ tiêu, nhiệm vụ chuyên môn')}`,
                 value: r.pct_quantity || 0, deptPctValue: r.dept_pct_quantity || 0,
                 managerOnly: false,
             },
             {
                 key: 'pct_quality', deptPctKey: 'dept_pct_quality',
                 evidenceKey: 'evidence_quality', evidenceNameKey: 'evidence_quality_name',
-                label: 'b) Chất lượng kết quả thực hiện nhiệm vụ được giao',
+                label: `b) ${lbl('task_label_quality', 'Chất lượng kết quả thực hiện nhiệm vụ được giao')}`,
                 value: r.pct_quality || 0, deptPctValue: r.dept_pct_quality || 0,
                 managerOnly: false,
             },
             {
                 key: 'pct_progress', deptPctKey: 'dept_pct_progress',
                 evidenceKey: 'evidence_progress', evidenceNameKey: 'evidence_progress_name',
-                label: 'c) Tiến độ thực hiện',
+                label: `c) ${lbl('task_label_progress', 'Tiến độ thực hiện')}`,
                 value: r.pct_progress || 0, deptPctValue: r.dept_pct_progress || 0,
                 managerOnly: false,
             },
             {
                 key: 'pct_field_result', deptPctKey: 'dept_pct_field_result',
                 evidenceKey: 'evidence_field_result', evidenceNameKey: 'evidence_field_result_name',
-                label: 'd) Kết quả hoạt động lĩnh vực phụ trách',
+                label: `d) ${lbl('task_label_field_result', 'Kết quả hoạt động lĩnh vực phụ trách')}`,
                 value: r.pct_field_result || 0, deptPctValue: r.dept_pct_field_result || 0,
                 managerOnly: true,
             },
             {
                 key: 'pct_organization', deptPctKey: 'dept_pct_organization',
                 evidenceKey: 'evidence_organization', evidenceNameKey: 'evidence_organization_name',
-                label: 'đ) Khả năng tổ chức triển khai thực hiện',
+                label: `đ) ${lbl('task_label_organization', 'Khả năng tổ chức triển khai thực hiện')}`,
                 value: r.pct_organization || 0, deptPctValue: r.dept_pct_organization || 0,
                 managerOnly: true,
             },
             {
                 key: 'pct_team_cohesion', deptPctKey: 'dept_pct_team_cohesion',
                 evidenceKey: 'evidence_team_cohesion', evidenceNameKey: 'evidence_team_cohesion_name',
-                label: 'e) Năng lực tập hợp đoàn kết',
+                label: `e) ${lbl('task_label_team_cohesion', 'Năng lực tập hợp đoàn kết')}`,
                 value: r.pct_team_cohesion || 0, deptPctValue: r.dept_pct_team_cohesion || 0,
                 managerOnly: true,
             },
@@ -393,6 +405,29 @@ export class EvaluationFormView extends Component {
         if (!this.state.record) return true;
         // Employee can edit when draft. Dept manager can edit when state is submitted.
         return this.state.record.state !== 'draft' && !this.state.canEditDept;
+    }
+
+    /**
+     * Return the URL to view/download a PDF evidence file for the current record.
+     * evidenceKey format: 'evidence_quantity', 'evidence_quality', etc.
+     */
+    getEvidenceUrl(evidenceKey) {
+        if (!this.evalId || !evidenceKey) return '#';
+        // Strip 'evidence_' prefix to get the field_name segment
+        const fieldName = evidenceKey.replace(/^evidence_/, '');
+        return `/bv_danh_gia/monthly_evaluation/${this.evalId}/evidence/${fieldName}`;
+    }
+
+    /** Hiện cột TK/TP ở Phần I khi đang ở chế độ TP hoặc đã có điểm TP */
+    get showDeptColI() {
+        return this.state.canEditDept ||
+            this.state.criteria_groups.some(g => g.criteria.some(c => (c.deptScore || 0) > 0));
+    }
+
+    /** Hiện cột TK/TP ở Phần II khi đang ở chế độ TP hoặc đã có % TP */
+    get showDeptColII() {
+        return this.state.canEditDept ||
+            this.state.task_fields.some(f => (f.deptPctValue || 0) > 0);
     }
 
     get monthLabel() {

@@ -1,0 +1,106 @@
+/* ──────────────────────────────────────────────────────────
+   KQTHNV Grid Table — Odoo Standard Form, Tab II
+   4 columns: label | NV tự chấm | TK/TP chấm | Minh chứng
+   ────────────────────────────────────────────────────────── */
+
+.bv-kqtnv-section {
+    margin: 0 0 14px 0;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.bv-kqtnv-head,
+.bv-kqtnv-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 120px 220px;
+    gap: 0;
+}
+
+.bv-kqtnv-head {
+    background: #f4f6f9;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #6c757d;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.bv-kqtnv-head > div,
+.bv-kqtnv-row > div {
+    padding: 9px 12px;
+    display: flex;
+    align-items: center;
+}
+
+/* Dividers between columns */
+.bv-kqtnv-head > div + div,
+.bv-kqtnv-row > div + div {
+    border-left: 1px solid #dee2e6;
+}
+
+.bv-kqtnv-row {
+    border-top: 1px solid #dee2e6;
+    transition: background .1s;
+}
+
+.bv-kqtnv-row:hover {
+    background: #f8f9fa;
+}
+
+.bv-kq-c-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #212529;
+}
+
+.bv-kq-c-nv,
+.bv-kq-c-tp {
+    justify-content: center;
+}
+
+.bv-kq-c-ev {
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 12px;
+}
+
+/* Manager criteria section — amber accent */
+.bv-kqtnv-section--mgr {
+    border-color: #ffc107;
+}
+
+.bv-kqtnv-section--mgr .bv-kqtnv-head {
+    background: #fff8e1;
+    border-bottom-color: #ffc107;
+    color: #856404;
+}
+
+/* ── Field widgets inside the grid ── */
+
+/* Hide the auto-generated label that Odoo renders with each field */
+.bv-kqtnv-row .o_field_widget .o_form_label,
+.bv-kqtnv-row .o_field_widget label:not(.o_form_label_empty) {
+    display: none !important;
+}
+
+/* Float / integer inputs — center and compact */
+.bv-kq-c-nv .o_field_widget input,
+.bv-kq-c-tp .o_field_widget input {
+    text-align: center;
+    width: 80px !important;
+    padding: 4px 6px;
+}
+
+/* Binary widget — compact download button */
+.bv-kq-c-ev .o_field_binary .o_form_binary_file_label {
+    font-size: 11px;
+    word-break: break-all;
+    max-width: 140px;
+}
+
+.bv-kq-c-ev .o_field_binary button {
+    padding: 3px 8px;
+    font-size: 11px;
+}

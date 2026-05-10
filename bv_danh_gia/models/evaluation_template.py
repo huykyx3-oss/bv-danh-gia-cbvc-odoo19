@@ -61,9 +61,11 @@ class EvaluationTemplate(models.Model):
 
     # Workflow configuration per template
     workflow_steps = fields.Selection([
-        ('full', 'Đầy đủ: NV → Trưởng khoa → TCCB → BGĐ'),
-        ('skip_dept', 'Bỏ qua trưởng khoa: NV → TCCB → BGĐ'),
-        ('skip_hr', 'Bỏ qua TCCB: NV → Trưởng khoa → BGĐ'),
+        ('full', 'NV → TK/TP → TCCB → BGĐ'),
+        ('nv_tp_tccb', 'NV → TK/TP → TCCB (không qua BGĐ)'),
+        ('nv_tp', 'NV → TK/TP (trưởng khoa duyệt là kết thúc)'),
+        ('skip_dept', 'Bỏ qua TK/TP: NV → TCCB → BGĐ'),
+        ('skip_hr', 'Bỏ qua TCCB: NV → TK/TP → BGĐ'),
         ('minimal', 'Tối giản: NV → BGĐ'),
         ('auto', 'Tự động duyệt hoàn toàn'),
     ], string='Quy trình duyệt', default='full')

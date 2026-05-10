@@ -43,7 +43,8 @@
                         <group>
                             <field name="year_from"/>
                             <field name="year_to"/>
-                            <field name="workflow_steps"/>
+                            <field name="workflow_steps"
+                                   help="Áp dụng cho mọi phiếu đánh giá hằng tháng chọn biểu mẫu này. Hai chế độ thường dùng: (1) NV→TK/TP→TCCB→BGĐ; (2) NV→TK/TP→TCCB xong; (3) NV→TK/TP xong."/>
                             <field name="task_score_weight"/>
                         </group>
                     </group>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ========== FORM VIEW ========== -->
     <record id="view_monthly_evaluation_form" model="ir.ui.view">
         <field name="name">bv.monthly.evaluation.form</field>
         <field name="model">bv.monthly.evaluation</field>
-        <field name="priority">10</field>
         <field name="arch" type="xml">
             <form>
                 <header>
@@ -27,7 +27,7 @@
                             type="object" class="btn-danger"
                             invisible="state in ('draft', 'approved', 'rejected')"
                             groups="bv_danh_gia.group_evaluation_dept_manager"/>
-                    <button name="action_reset_draft" string="Đặt lại nhập"
+                    <button name="action_reset_draft" string="Đặt lại nháp"
                             type="object"
                             invisible="state not in ('rejected', 'submitted')"
                             groups="bv_danh_gia.group_evaluation_user"/>
@@ -47,6 +47,7 @@
                         </h1>
                     </div>
 
+                    <!-- BƯỚC 1: Chọn biểu mẫu -->
                     <div class="alert alert-info" role="alert" invisible="state != 'draft'">
                         <strong>Hướng dẫn:</strong>
                         Chọn <strong>Biểu mẫu đánh giá</strong> do Phòng TCCB ban hành — các tiêu chí sẽ tự động hiện ra.
@@ -72,10 +73,12 @@
                             <field name="month" readonly="state != 'draft'"/>
                             <field name="year" readonly="state != 'draft'"/>
                             <field name="quarter" readonly="1"/>
+                            <field name="contract_type" readonly="state != 'draft'"/>
                         </group>
                     </group>
 
                     <notebook>
+                        <!-- Tab 1: Tiêu chí chung -->
                         <page string="I. Tiêu chí chung">
                             <group>
                                 <field name="general_score_max" readonly="1"
@@ -107,12 +110,14 @@
                             </group>
                         </page>
 
+                        <!-- Tab 2: Điểm KQTHNV -->
                         <page string="II. Điểm KQTHNV">
                             <group>
                                 <field name="task_score_max" readonly="1"
                                        string="Điểm tối đa KQTHNV (theo biểu mẫu)"/>
                             </group>
 
+                            <!-- Tiêu chí cơ bản — bảng 4 cột -->
                             <div class="bv-kqtnv-section">
                                 <div class="bv-kqtnv-head">
                                     <div class="bv-kq-c-label">Tiêu chí cơ bản (tất cả CBVC)</div>
@@ -149,6 +154,7 @@
                                 </div>
                             </div>
 
+                            <!-- Tiêu chí lãnh đạo — bảng 4 cột -->
                             <div class="bv-kqtnv-section bv-kqtnv-section--mgr" invisible="not is_manager">
                                 <div class="bv-kqtnv-head">
                                     <div class="bv-kq-c-label">Tiêu chí bổ sung (lãnh đạo, quản lý)</div>
@@ -190,6 +196,7 @@
                             </group>
                         </page>
 
+                        <!-- Tab 3: Tổng hợp -->
                         <page string="III. Tổng hợp kết quả">
                             <div class="bv-kqtnv-section">
                                 <div class="bv-kqtnv-head">
@@ -237,6 +244,7 @@
         </field>
     </record>
 
+    <!-- ========== DEPT MANAGER APPROVAL FORM VIEW ========== -->
     <record id="view_monthly_evaluation_dept_form" model="ir.ui.view">
         <field name="name">bv.monthly.evaluation.dept.form</field>
         <field name="model">bv.monthly.evaluation</field>
@@ -244,7 +252,7 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_dept_approve" string="Xác nhận điểm &amp; Duyệt"
+                    <button name="action_dept_approve" string="✓ Xác nhận điểm &amp; Duyệt"
                             type="object" class="btn-primary"
                             invisible="state != 'submitted'"
                             groups="bv_danh_gia.group_evaluation_dept_manager"
@@ -277,6 +285,7 @@
                         <group string="Kỳ đánh giá">
                             <field name="month" readonly="1"/>
                             <field name="year" readonly="1"/>
+                            <field name="contract_type" readonly="1"/>
                             <field name="total_score" readonly="1" decoration-bf="1"/>
                             <field name="classification" readonly="1"/>
                         </group>
@@ -294,7 +303,7 @@
                                            string="NV tự chấm"
                                            decoration-muted="1"/>
                                     <field name="dept_score"
-                                           string="TK/TP chấm"
+                                           string="TK/TP chấm *"
                                            decoration-bf="parent.state == 'submitted'"
                                            decoration-success="dept_score >= self_score"
                                            decoration-warning="dept_score &lt; self_score"/>
@@ -316,6 +325,7 @@
                                 Cột NV tự chấm chỉ để tham khảo.
                             </div>
 
+                            <!-- Tiêu chí cơ bản — bảng 4 cột -->
                             <div class="bv-kqtnv-section">
                                 <div class="bv-kqtnv-head">
                                     <div class="bv-kq-c-label">Tiêu chí cơ bản (tất cả CBVC)</div>
@@ -352,6 +362,7 @@
                                 </div>
                             </div>
 
+                            <!-- Tiêu chí lãnh đạo — bảng 4 cột -->
                             <div class="bv-kqtnv-section bv-kqtnv-section--mgr" invisible="not is_manager">
                                 <div class="bv-kqtnv-head">
                                     <div class="bv-kq-c-label">Tiêu chí bổ sung (lãnh đạo, quản lý)</div>
@@ -437,6 +448,7 @@
         </field>
     </record>
 
+    <!-- ========== LIST VIEW ========== -->
     <record id="view_monthly_evaluation_tree" model="ir.ui.view">
         <field name="name">bv.monthly.evaluation.tree</field>
         <field name="model">bv.monthly.evaluation</field>
@@ -449,6 +461,7 @@
                 <field name="department_id"/>
                 <field name="month"/>
                 <field name="year"/>
+                <field name="contract_type" optional="hide"/>
                 <field name="general_score"/>
                 <field name="task_score"/>
                 <field name="total_score" decoration-bf="1"/>
@@ -462,6 +475,7 @@
         </field>
     </record>
 
+    <!-- ========== SEARCH VIEW ========== -->
     <record id="view_monthly_evaluation_search" model="ir.ui.view">
         <field name="name">bv.monthly.evaluation.search</field>
         <field name="model">bv.monthly.evaluation</field>
@@ -473,11 +487,11 @@
         </field>
     </record>
 
+    <!-- ========== ACTION ========== -->
     <record id="action_monthly_evaluation" model="ir.actions.act_window">
         <field name="name">Phiếu đánh giá hằng tháng</field>
         <field name="res_model">bv.monthly.evaluation</field>
         <field name="view_mode">list,form</field>
-        <field name="views" eval="[(ref('view_monthly_evaluation_tree'), 'list'), (ref('view_monthly_evaluation_form'), 'form')]"/>
         <field name="context">{'search_default_my_evaluations': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -490,6 +504,7 @@
         </field>
     </record>
 
+    <!-- Action for department managers — uses dedicated scoring form -->
     <record id="action_monthly_evaluation_dept" model="ir.actions.act_window">
         <field name="name">Duyệt &amp; Chấm điểm (Trưởng Khoa/Phòng)</field>
         <field name="res_model">bv.monthly.evaluation</field>
@@ -497,16 +512,16 @@
         <field name="domain">[('state', 'in', ['submitted', 'dept_approved', 'hr_reviewed', 'approved', 'rejected'])]</field>
         <field name="views" eval="[(ref('view_monthly_evaluation_tree'), 'list'), (ref('view_monthly_evaluation_dept_form'), 'form')]"/>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Không có phiếu chờ duyệt</p>
+            <p class="o_view_nocontent_smiling_face">Không có phiếu nào chờ duyệt</p>
             <p>Các phiếu đánh giá của nhân viên trong khoa/phòng đã gửi sẽ xuất hiện ở đây.</p>
         </field>
     </record>
 
+    <!-- Action for HR -->
     <record id="action_monthly_evaluation_hr" model="ir.actions.act_window">
         <field name="name">Xét duyệt phiếu đánh giá (TCCB)</field>
         <field name="res_model">bv.monthly.evaluation</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('state', 'in', ['dept_approved', 'hr_reviewed', 'approved', 'rejected'])]</field>
-        <field name="views" eval="[(ref('view_monthly_evaluation_tree'), 'list'), (ref('view_monthly_evaluation_dept_form'), 'form')]"/>
     </record>
 </odoo>

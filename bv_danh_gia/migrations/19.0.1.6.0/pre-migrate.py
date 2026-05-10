@@ -4,6 +4,15 @@
 
 
 def migrate(cr, version):
+    cr.execute(
+        """
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'bv_monthly_evaluation'
+        """
+    )
+    if not cr.fetchone():
+        return
+
     cols = [
         ('general_score_nv', 'double precision', '0'),
         ('general_score_tp', 'double precision', '0'),

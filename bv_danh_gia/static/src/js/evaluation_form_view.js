@@ -58,7 +58,7 @@ export class EvaluationFormView extends Component {
     async loadRecord() {
         this.state.loading = true;
         const [record] = await this.orm.read('bv.monthly.evaluation', [this.evalId], [
-            'employee_id', 'department_id', 'job_id', 'month', 'year',
+            'employee_id', 'department_id', 'job_id', 'month', 'year', 'contract_type',
             'is_manager', 'state', 'general_score', 'task_score', 'total_score',
             'general_score_max', 'task_score_max',
             'can_edit_dept_score',
@@ -286,21 +286,23 @@ export class EvaluationFormView extends Component {
     async uploadEvidence(evidenceKey, evidenceNameKey, ev) {
         const file = ev.target.files && ev.target.files[0];
         if (!file) return;
-        if (file.type !== 'application/pdf') {
-            this.notification.add('Chỉ chấp nhận file PDF!', { type: 'warning' });
+        const lowerName = (file.name || '').trim().toLowerCase();
+        if (lowerName && !lowerName.endsWith('.pdf')) {
+            this.notification.add('Chỉ chấp nhận file PDF (.pdf).', { type: 'warning' });
             ev.target.value = '';
             return;
         }
+        const safeName = lowerName ? file.name.trim() : 'minh-chung.pdf';
         const reader = new FileReader();
         reader.onload = async (e) => {
             const base64 = e.target.result.split(',')[1];
             try {
                 await this.orm.write('bv.monthly.evaluation', [this.evalId], {
                     [evidenceKey]: base64,
-                    [evidenceNameKey]: file.name,
+                    [evidenceNameKey]: safeName,
                 });
-                this.state.evidenceNames[evidenceKey] = file.name;
-                this.notification.add('Đã tải lên: ' + file.name, { type: 'success', sticky: false });
+                this.state.evidenceNames[evidenceKey] = safeName;
+                this.notification.add('Đã tải lên: ' + safeName, { type: 'success', sticky: false });
             } catch (err) {
                 this.notification.add('Lỗi tải file: ' + (err.message || ''), { type: 'danger' });
             }
@@ -313,6 +315,12 @@ export class EvaluationFormView extends Component {
         if (this.state.record && this.state.record.state !== 'draft') return;
         this.state.record.is_manager = !this.state.record.is_manager;
         this._recalculate();
+    }
+
+    onContractTypeChange(ev) {
+        if (!this.state.record || this.state.record.state !== 'draft') return;
+        const v = ev.target.value;
+        this.state.record.contract_type = v || false;
     }
 
     _recalculate() {
@@ -453,6 +461,21 @@ export class EvaluationFormView extends Component {
         return this.state.record ? months[this.state.record.month] || '' : '';
     }
 
+    get contractTypeLabel() {
+        const map = {
+            labor: 'Hợp đồng lao động',
+            public_employee: 'Viên chức',
+            civil_servant: 'Công chức',
+        };
+        const k = this.state.record && this.state.record.contract_type;
+        return k ? map[k] || String(k) : '';
+    }
+
+    /** Read-only line in OWL card when not draft */
+    get contractTypeDisplay() {
+        return this.contractTypeLabel || '—';
+    }
+
     async saveDraft() {
         if (!this.state.record || this.state.saving) return;
         this.state.saving = true;
@@ -477,6 +500,7 @@ export class EvaluationFormView extends Component {
                 vals.criteria_line_ids = lineWrites;
             }
             if (this.state.record.state === 'draft') {
+                vals.contract_type = this.state.record.contract_type || false;
                 vals.is_manager = this.state.record.is_manager || false;
                 for (const f of this.state.task_fields) {
                     vals[f.key] = parseFloat(f.value) || 0;

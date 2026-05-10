@@ -69,8 +69,9 @@ class BvBinaryField extends Component {
     async onUpload(ev) {
         const file = ev.target.files[0];
         if (!file) return;
-        if (!file.name.toLowerCase().endsWith(".pdf")) {
-            this.notif.add("Chỉ chấp nhận file PDF", { type: "danger" });
+        const lowerName = (file.name || "").trim().toLowerCase();
+        if (lowerName && !lowerName.endsWith(".pdf")) {
+            this.notif.add("Chỉ chấp nhận file PDF (.pdf)", { type: "danger" });
             ev.target.value = "";
             return;
         }
@@ -79,7 +80,8 @@ class BvBinaryField extends Component {
             const b64 = e.target.result.split(",")[1];
             const upd = { [this.props.name]: b64 };
             const ff = this.filenameFieldName;
-            if (ff) upd[ff] = file.name;
+            const safeName = lowerName ? file.name.trim() : "minh-chung.pdf";
+            if (ff) upd[ff] = safeName;
             await this.props.record.update(upd);
         };
         reader.readAsDataURL(file);

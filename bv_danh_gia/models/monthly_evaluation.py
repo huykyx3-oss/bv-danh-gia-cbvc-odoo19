@@ -19,6 +19,12 @@ CLASSIFICATION = [
     ('poor', 'Không hoàn thành nhiệm vụ'),
 ]
 
+CONTRACT_TYPE = [
+    ('labor', 'Hợp đồng lao động'),
+    ('public_employee', 'Viên chức'),
+    ('civil_servant', 'Công chức'),
+]
+
 
 class MonthlyEvaluation(models.Model):
     _name = 'bv.monthly.evaluation'
@@ -44,6 +50,13 @@ class MonthlyEvaluation(models.Model):
                           tracking=True)
     quarter = fields.Integer(string='Quý', compute='_compute_quarter', store=True)
 
+    contract_type = fields.Selection(
+        CONTRACT_TYPE,
+        string='Loại hợp đồng',
+        tracking=True,
+        help='Phân loại theo hình thức làm việc (lưu để báo cáo, thống kê sau này)',
+    )
+
     state = fields.Selection([
         ('draft', 'Nháp'),
         ('submitted', 'Đã gửi'),
@@ -52,18 +65,6 @@ class MonthlyEvaluation(models.Model):
         ('approved', 'BGĐ phê duyệt'),
         ('rejected', 'Trả lại'),
     ], string='Trạng thái', default='draft', tracking=True, required=True)
-
-    # Loại đối tượng (phiên bản cũ + Studio có thể dùng nhiều key; giữ đủ để không gãy form / dữ liệu cũ)
-    subject_type = fields.Selection(
-        [
-            ('monthly', 'Đánh giá hằng tháng'),
-            ('contract', 'Hợp đồng lao động'),
-            ('public_employee', 'Viên chức'),
-            ('civil_servant', 'Công chức'),
-        ],
-        string='Loại phiếu',
-        default='monthly',
-    )
 
     is_manager = fields.Boolean(
         string='Giữ chức vụ lãnh đạo, quản lý',
@@ -443,11 +444,37 @@ class MonthlyEvaluation(models.Model):
                 'criteria_id': tc.criteria_id.id,
             })
 
+    _EVIDENCE_BIN_NAME_PAIRS = (
+        ('evidence_quantity', 'evidence_quantity_name'),
+        ('evidence_quality', 'evidence_quality_name'),
+        ('evidence_progress', 'evidence_progress_name'),
+        ('evidence_field_result', 'evidence_field_result_name'),
+        ('evidence_organization', 'evidence_organization_name'),
+        ('evidence_team_cohesion', 'evidence_team_cohesion_name'),
+    )
+
+    def _fill_evidence_pdf_names(self, vals):
+        """Gán tên file mặc định khi có binary nhưng client không gửi *_name (file.name rỗng)."""
+        if not vals:
+            return vals
+        vals = dict(vals)
+        for fbin, fname in self._EVIDENCE_BIN_NAME_PAIRS:
+            if fbin not in vals:
+                continue
+            if vals.get(fbin) and not (vals.get(fname) or '').strip():
+                vals[fname] = 'minh-chung.pdf'
+        return vals
+
     @api.model_create_multi
     def create(self, vals_list):
+        vals_list = [self._fill_evidence_pdf_names(v) for v in vals_list]
         records = super().create(vals_list)
         records.filtered(lambda r: not r.criteria_line_ids)._populate_criteria_lines()
         return records
+
+    def write(self, vals):
+        vals = self._fill_evidence_pdf_names(vals)
+        return super().write(vals)
 
     @api.constrains('pct_quantity', 'pct_quality', 'pct_progress',
                      'pct_field_result', 'pct_organization', 'pct_team_cohesion')
@@ -478,7 +505,6 @@ class MonthlyEvaluation(models.Model):
         'evidence_team_cohesion', 'evidence_team_cohesion_name',
     )
     def _check_evidence_pdf(self):
-        import json, os
         pairs = [
             ('evidence_quantity', 'evidence_quantity_name', 'a – Số lượng'),
             ('evidence_quality', 'evidence_quality_name', 'b – Chất lượng'),
@@ -493,23 +519,23 @@ class MonthlyEvaluation(models.Model):
                 name = (getattr(rec, fname) or '').strip()
                 if not data:
                     continue
-                if not name.lower().endswith('.pdf'):
-                    raise ValidationError(
-                        f'Minh chứng "{label}": chỉ chấp nhận file PDF (.pdf).\n'
-                        f'File đang chọn: "{name or "(không có tên)"}".\n'
-                        'Vui lòng chọn lại file có định dạng PDF.'
-                    )
                 try:
                     raw = base64.b64decode(data)
-                    if not raw.startswith(b'%PDF'):
-                        raise ValidationError(
-                            f'Minh chứng "{label}": nội dung file không phải PDF hợp lệ. '
-                            'Vui lòng chọn đúng file PDF.'
-                        )
-                except ValidationError:
-                    raise
                 except Exception:
-                    pass  # decode error handled by filename check above
+                    raise ValidationError(
+                        f'Minh chứng "{label}": không đọc được dữ liệu file (Base64).'
+                    ) from None
+                if not raw.startswith(b'%PDF'):
+                    raise ValidationError(
+                        f'Minh chứng "{label}": nội dung file không phải PDF hợp lệ '
+                        '(thiếu tiêu đề %PDF).'
+                    )
+                if name and not name.lower().endswith('.pdf'):
+                    raise ValidationError(
+                        f'Minh chứng "{label}": chỉ chấp nhận file PDF (.pdf).\n'
+                        f'File đang chọn: "{name}".\n'
+                        'Vui lòng chọn lại file có định dạng PDF.'
+                    )
 
     @api.constrains('dept_pct_quantity', 'dept_pct_quality', 'dept_pct_progress',
                      'dept_pct_field_result', 'dept_pct_organization', 'dept_pct_team_cohesion')
@@ -640,10 +666,27 @@ class MonthlyEvaluation(models.Model):
             self.state = 'approved'
             self._check_and_warn_ratio()
 
+    def _notify_employee_approved(self):
+        """Gửi thông báo NV khi phiếu chuyển sang approved (nếu bật trong cấu hình)."""
+        self.ensure_one()
+        config = self._get_config()
+        if config.notify_on_approve and self.employee_id.user_id:
+            self._send_notification(
+                self.employee_id.user_id,
+                'Phiếu đánh giá đã được phê duyệt',
+                f'Phiếu đánh giá Tháng {self.month}/{self.year} của bạn '
+                f'đã được phê duyệt. Tổng điểm: {self.total_score:.1f}',
+                'success')
+
     def _advance_workflow_after_dept(self, config):
         """Skip HR/Director states after dept manager approves."""
         self.ensure_one()
         steps = self._get_workflow_steps()
+        if steps == 'nv_tp':
+            self.state = 'approved'
+            self._check_and_warn_ratio()
+            self._notify_employee_approved()
+            return
         if steps in ('skip_hr',) and self.state == 'dept_approved':
             self.state = 'hr_reviewed'
         if (config.auto_approve_director or steps in ('minimal', 'auto')) \
@@ -656,6 +699,11 @@ class MonthlyEvaluation(models.Model):
         for rec in self:
             if rec.state != 'draft':
                 raise UserError('Chỉ có thể gửi phiếu ở trạng thái Nháp.')
+            if not rec.contract_type:
+                raise UserError(
+                    'Vui lòng chọn loại hợp đồng (Hợp đồng lao động / Viên chức / Công chức) '
+                    'trong phần Thông tin kỳ đánh giá trước khi gửi.'
+                )
             if rec.total_score <= 0:
                 raise UserError('Vui lòng chấm điểm trước khi gửi.')
             rec.state = 'submitted'
@@ -686,6 +734,12 @@ class MonthlyEvaluation(models.Model):
         for rec in self:
             if rec.state != 'dept_approved':
                 raise UserError('Chỉ có thể xét duyệt phiếu đã được trưởng khoa duyệt.')
+            steps = rec._get_workflow_steps()
+            if steps == 'nv_tp_tccb':
+                rec.state = 'approved'
+                rec._check_and_warn_ratio()
+                rec._notify_employee_approved()
+                continue
             rec.state = 'hr_reviewed'
 
             config = rec._get_config()
@@ -699,14 +753,7 @@ class MonthlyEvaluation(models.Model):
                 raise UserError('Chỉ có thể phê duyệt phiếu đã qua TCCB.')
             rec.state = 'approved'
 
-            config = rec._get_config()
-            if config.notify_on_approve and rec.employee_id.user_id:
-                rec._send_notification(
-                    rec.employee_id.user_id,
-                    'Phiếu đánh giá đã được phê duyệt',
-                    f'Phiếu đánh giá Tháng {rec.month}/{rec.year} của bạn '
-                    f'đã được phê duyệt. Tổng điểm: {rec.total_score:.1f}',
-                    'success')
+            rec._notify_employee_approved()
 
             rec._check_and_warn_ratio()
 

@@ -72,6 +72,20 @@
                                 <div class="bv-field-value"><t t-esc="monthLabel"/> / <t t-esc="state.record.year"/></div>
                             </div>
                             <div>
+                                <div class="bv-field-label">Loại hợp đồng</div>
+                                <t t-if="state.record.state === 'draft'">
+                                    <select class="bv-select-contract" t-att-value="state.record.contract_type || ''" t-on-change="onContractTypeChange">
+                                        <option value="">— Chọn —</option>
+                                        <option value="labor">Hợp đồng lao động</option>
+                                        <option value="public_employee">Viên chức</option>
+                                        <option value="civil_servant">Công chức</option>
+                                    </select>
+                                </t>
+                                <t t-else="">
+                                    <div class="bv-field-value"><t t-esc="contractTypeDisplay"/></div>
+                                </t>
+                            </div>
+                            <div>
                                 <div class="bv-field-label">Trạng thái</div>
                                 <div class="bv-field-value" style="text-transform:uppercase;font-size:12px;letter-spacing:.06em;">
                                     <t t-esc="state.record.state"/>

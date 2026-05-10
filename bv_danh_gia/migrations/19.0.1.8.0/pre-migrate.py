@@ -13,6 +13,15 @@ DEFAULTS = {
 
 
 def migrate(cr, version):
+    cr.execute(
+        """
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'bv_evaluation_template'
+        """
+    )
+    if not cr.fetchone():
+        return
+
     for col, default in DEFAULTS.items():
         cr.execute(f"""
             ALTER TABLE bv_evaluation_template

@@ -54,28 +54,22 @@
                     <notebook>
                         <page string="Nhãn tiêu chí KQTHNV"
                               groups="bv_danh_gia.group_evaluation_hr">
-                            <div class="alert alert-info" style="margin-bottom:10px;">
-                                <strong>Tùy chỉnh tên tiêu chí KQTHNV:</strong>
-                                Phòng TCCB có thể đổi tên 6 tiêu chí KQTHNV cho biểu mẫu này.
-                                Tên mới sẽ hiển thị trên phiếu đánh giá và giao diện nhập liệu.
+                            <div class="alert alert-info" role="alert">
+                                <strong>Lưu ý:</strong> Chỉ chỉnh tên hiển thị.
+                                Không thêm/bớt tiêu chí để giữ nguyên công thức tính điểm.
                             </div>
                             <group string="Tiêu chí cơ bản (tất cả CBVC)">
-                                <field name="task_label_quantity"
-                                       placeholder="Số lượng công việc"/>
-                                <field name="task_label_quality"
-                                       placeholder="Chất lượng công việc"/>
-                                <field name="task_label_progress"
-                                       placeholder="Tiến độ hoàn thành"/>
+                                <field name="label_pct_a"/>
+                                <field name="label_pct_b"/>
+                                <field name="label_pct_c"/>
                             </group>
-                            <group string="Tiêu chí lãnh đạo, quản lý">
-                                <field name="task_label_field_result"
-                                       placeholder="Kết quả lĩnh vực được giao"/>
-                                <field name="task_label_organization"
-                                       placeholder="Khả năng tổ chức triển khai"/>
-                                <field name="task_label_team_cohesion"
-                                       placeholder="Năng lực tập hợp, đoàn kết"/>
+                            <group string="Tiêu chí bổ sung (lãnh đạo, quản lý)">
+                                <field name="label_pct_d"/>
+                                <field name="label_pct_dd"/>
+                                <field name="label_pct_e"/>
                             </group>
                         </page>
+
                         <page string="Tiêu chí đánh giá">
                             <div class="alert alert-info" style="margin-bottom:10px;">
                                 <strong>Hướng dẫn nhập tiêu chí:</strong>

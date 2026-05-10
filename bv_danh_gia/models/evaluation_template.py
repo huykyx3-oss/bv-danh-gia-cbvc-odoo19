@@ -39,19 +39,25 @@ class EvaluationTemplate(models.Model):
         string='Trọng số điểm KQTHNV', default=70.0,
         help='Điểm tối đa cho phần kết quả thực hiện nhiệm vụ')
 
-    # Tên tiêu chí KQTHNV — TCCB có thể đổi tên riêng cho biểu mẫu này
-    task_label_quantity = fields.Char(string='a – Tên tiêu chí Số lượng',
-                                       default='Số lượng công việc')
-    task_label_quality = fields.Char(string='b – Tên tiêu chí Chất lượng',
-                                      default='Chất lượng công việc')
-    task_label_progress = fields.Char(string='c – Tên tiêu chí Tiến độ',
-                                       default='Tiến độ hoàn thành')
-    task_label_field_result = fields.Char(string='d – Tên tiêu chí Kết quả lĩnh vực',
-                                           default='Kết quả lĩnh vực được giao')
-    task_label_organization = fields.Char(string='đ – Tên tiêu chí Tổ chức triển khai',
-                                           default='Khả năng tổ chức triển khai')
-    task_label_team_cohesion = fields.Char(string='e – Tên tiêu chí Đoàn kết',
-                                            default='Năng lực tập hợp, đoàn kết')
+    # Nhãn hiển thị 6 tiêu chí KQTHNV (TCCB có thể đổi tên, không thêm mới)
+    label_pct_a = fields.Char(
+        string='Nhãn tiêu chí a (Số lượng)',
+        default='a) Tỷ lệ % số lượng kết quả thực hiện nhiệm vụ')
+    label_pct_b = fields.Char(
+        string='Nhãn tiêu chí b (Chất lượng)',
+        default='b) Tỷ lệ % chất lượng kết quả thực hiện nhiệm vụ')
+    label_pct_c = fields.Char(
+        string='Nhãn tiêu chí c (Tiến độ)',
+        default='c) Tỷ lệ % tiến độ kết quả thực hiện nhiệm vụ')
+    label_pct_d = fields.Char(
+        string='Nhãn tiêu chí d (Kết quả lĩnh vực — lãnh đạo)',
+        default='d) Tỷ lệ % kết quả hoạt động lĩnh vực phụ trách')
+    label_pct_dd = fields.Char(
+        string='Nhãn tiêu chí đ (Tổ chức — lãnh đạo)',
+        default='đ) Tỷ lệ % khả năng tổ chức triển khai')
+    label_pct_e = fields.Char(
+        string='Nhãn tiêu chí e (Đoàn kết — lãnh đạo)',
+        default='e) Tỷ lệ % năng lực tập hợp, đoàn kết')
 
     # Workflow configuration per template
     workflow_steps = fields.Selection([

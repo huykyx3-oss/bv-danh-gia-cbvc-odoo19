@@ -73,9 +73,9 @@
 
 /* ── Field widgets inside the grid ── */
 
-/* Hide the auto-generated label that Odoo renders with each field */
-.bv-kqtnv-row .o_field_widget .o_form_label,
-.bv-kqtnv-row .o_field_widget label:not(.o_form_label_empty) {
+/* Hide the auto-generated field labels Odoo injects — target only .o_form_label
+   so custom <label> upload buttons inside the same widget are NOT hidden */
+.bv-kqtnv-row .o_field_widget label.o_form_label {
     display: none !important;
 }
 

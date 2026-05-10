@@ -35,11 +35,8 @@ class EvaluationCriteriaLine(models.Model):
     @api.depends('self_score', 'dept_score', 'evaluation_id.state')
     def _compute_final_score(self):
         for line in self:
-            state = line.evaluation_id.state
-            if state in ('submitted', 'dept_approved', 'hr_reviewed', 'approved'):
-                # Use dept score when available (>0), otherwise fall back to self score.
-                # In 'submitted' TK is actively scoring; in later states TK has finalised.
-                line.final_score = line.dept_score if line.dept_score > 0 else line.self_score
+            if line.evaluation_id.state in ('dept_approved', 'hr_reviewed', 'approved'):
+                line.final_score = line.dept_score
             else:
                 line.final_score = line.self_score
 

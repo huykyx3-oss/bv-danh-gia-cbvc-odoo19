@@ -3,6 +3,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { Component, useState, onWillStart, onMounted } from "@odoo/owl";
 
+
 export class EvaluationFormView extends Component {
     static template = "bv_danh_gia.EvaluationFormView";
     static props = ["*"];
@@ -24,13 +25,15 @@ export class EvaluationFormView extends Component {
             task_fields: [],
             scores: {},
             deptScores: {},
+            // NV totals (tự chấm)
             totalGeneral: 0,
-            totalDeptGeneral: 0,
             totalTask: 0,
             totalScore: 0,
-            totalGeneralNv: 0,
-            totalTaskNv: 0,
-            totalScoreNv: 0,
+            // TK/TP totals (độc lập NV)
+            totalDeptGeneral: 0,
+            totalDeptTask: 0,
+            totalScoreTp: 0,
+            classificationTp: '',
             generalMax: 30,
             taskMax: 70,
             classification: '',
@@ -57,19 +60,22 @@ export class EvaluationFormView extends Component {
         const [record] = await this.orm.read('bv.monthly.evaluation', [this.evalId], [
             'employee_id', 'department_id', 'job_id', 'month', 'year',
             'is_manager', 'state', 'general_score', 'task_score', 'total_score',
-            'general_score_nv', 'task_score_nv', 'total_score_nv',
             'general_score_max', 'task_score_max',
             'can_edit_dept_score',
-            'classification', 'strengths', 'weaknesses', 'authority_comment',
+            'classification', 'classification_tp',
+            'general_score_nv', 'general_score_tp',
+            'task_score_nv', 'task_score_tp',
+            'total_score_nv', 'total_score_tp',
+            'strengths', 'weaknesses', 'authority_comment',
             'pct_quantity', 'pct_quality', 'pct_progress',
             'pct_field_result', 'pct_organization', 'pct_team_cohesion',
             'dept_pct_quantity', 'dept_pct_quality', 'dept_pct_progress',
             'dept_pct_field_result', 'dept_pct_organization', 'dept_pct_team_cohesion',
             'evidence_quantity_name', 'evidence_quality_name', 'evidence_progress_name',
             'evidence_field_result_name', 'evidence_organization_name', 'evidence_team_cohesion_name',
-            'task_label_quantity', 'task_label_quality', 'task_label_progress',
-            'task_label_field_result', 'task_label_organization', 'task_label_team_cohesion',
             'criteria_line_ids', 'display_name',
+            'label_pct_a', 'label_pct_b', 'label_pct_c',
+            'label_pct_d', 'label_pct_dd', 'label_pct_e',
         ]);
         this.state.record = record;
         this.state.generalMax = record.general_score_max || 30;
@@ -78,10 +84,6 @@ export class EvaluationFormView extends Component {
         this.state.strengths = record.strengths || '';
         this.state.weaknesses = record.weaknesses || '';
         this.state.authorityComment = record.authority_comment || '';
-        // NV-only totals for comparison in Part III
-        this.state.totalGeneralNv = Math.round((record.general_score_nv || 0) * 10) / 10;
-        this.state.totalTaskNv = Math.round((record.task_score_nv || 0) * 10) / 10;
-        this.state.totalScoreNv = Math.round((record.total_score_nv || 0) * 10) / 10;
         // Populate evidence file names
         this.state.evidenceNames = {
             evidence_quantity: record.evidence_quantity_name || '',
@@ -171,48 +173,46 @@ export class EvaluationFormView extends Component {
     _buildTaskFields() {
         const r = this.state.record;
         if (!r) return;
-        // Use template labels if available, fall back to sensible defaults
-        const lbl = (key, fallback) => r[key] || fallback;
         this.state.task_fields = [
             {
                 key: 'pct_quantity', deptPctKey: 'dept_pct_quantity',
                 evidenceKey: 'evidence_quantity', evidenceNameKey: 'evidence_quantity_name',
-                label: `a) ${lbl('task_label_quantity', 'Số lượng thực hiện chỉ tiêu, nhiệm vụ chuyên môn')}`,
+                label: r.label_pct_a || 'a) Tỷ lệ % số lượng kết quả thực hiện nhiệm vụ',
                 value: r.pct_quantity || 0, deptPctValue: r.dept_pct_quantity || 0,
                 managerOnly: false,
             },
             {
                 key: 'pct_quality', deptPctKey: 'dept_pct_quality',
                 evidenceKey: 'evidence_quality', evidenceNameKey: 'evidence_quality_name',
-                label: `b) ${lbl('task_label_quality', 'Chất lượng kết quả thực hiện nhiệm vụ được giao')}`,
+                label: r.label_pct_b || 'b) Tỷ lệ % chất lượng kết quả thực hiện nhiệm vụ',
                 value: r.pct_quality || 0, deptPctValue: r.dept_pct_quality || 0,
                 managerOnly: false,
             },
             {
                 key: 'pct_progress', deptPctKey: 'dept_pct_progress',
                 evidenceKey: 'evidence_progress', evidenceNameKey: 'evidence_progress_name',
-                label: `c) ${lbl('task_label_progress', 'Tiến độ thực hiện')}`,
+                label: r.label_pct_c || 'c) Tỷ lệ % tiến độ kết quả thực hiện nhiệm vụ',
                 value: r.pct_progress || 0, deptPctValue: r.dept_pct_progress || 0,
                 managerOnly: false,
             },
             {
                 key: 'pct_field_result', deptPctKey: 'dept_pct_field_result',
                 evidenceKey: 'evidence_field_result', evidenceNameKey: 'evidence_field_result_name',
-                label: `d) ${lbl('task_label_field_result', 'Kết quả hoạt động lĩnh vực phụ trách')}`,
+                label: r.label_pct_d || 'd) Tỷ lệ % kết quả hoạt động lĩnh vực phụ trách',
                 value: r.pct_field_result || 0, deptPctValue: r.dept_pct_field_result || 0,
                 managerOnly: true,
             },
             {
                 key: 'pct_organization', deptPctKey: 'dept_pct_organization',
                 evidenceKey: 'evidence_organization', evidenceNameKey: 'evidence_organization_name',
-                label: `đ) ${lbl('task_label_organization', 'Khả năng tổ chức triển khai thực hiện')}`,
+                label: r.label_pct_dd || 'đ) Tỷ lệ % khả năng tổ chức triển khai',
                 value: r.pct_organization || 0, deptPctValue: r.dept_pct_organization || 0,
                 managerOnly: true,
             },
             {
                 key: 'pct_team_cohesion', deptPctKey: 'dept_pct_team_cohesion',
                 evidenceKey: 'evidence_team_cohesion', evidenceNameKey: 'evidence_team_cohesion_name',
-                label: `e) ${lbl('task_label_team_cohesion', 'Năng lực tập hợp đoàn kết')}`,
+                label: r.label_pct_e || 'e) Tỷ lệ % năng lực tập hợp, đoàn kết',
                 value: r.pct_team_cohesion || 0, deptPctValue: r.dept_pct_team_cohesion || 0,
                 managerOnly: true,
             },
@@ -317,8 +317,8 @@ export class EvaluationFormView extends Component {
 
     _recalculate() {
         // --- Phần I: tiêu chí chung ---
-        let generalScore = 0;
-        let deptGeneral = 0;
+        let generalScore = 0;   // NV tự chấm
+        let deptGeneral = 0;    // TK/TP chấm (độc lập)
         let filled = 0;
         let total = 0;
         for (const g of this.state.criteria_groups) {
@@ -337,39 +337,45 @@ export class EvaluationFormView extends Component {
         // --- Phần II: KQTHNV ---
         const isManager = this.state.record && this.state.record.is_manager;
         const activeFields = this.state.task_fields.filter(f => !f.managerOnly || isManager);
+        const taskMax = this.state.taskMax || 70;
 
-        // NV task score (from pct_*)
+        // NV task score (luôn từ pct_*)
         const pctSum = activeFields.reduce((sum, f) => sum + (parseFloat(f.value) || 0), 0);
         const pctAvg = activeFields.length > 0 ? pctSum / activeFields.length : 0;
-        const nvTaskScore = Math.round((pctAvg / 100 * (this.state.taskMax || 70)) * 10) / 10;
+        const nvTaskScore = Math.round((pctAvg / 100 * taskMax) * 10) / 10;
 
-        // TP task score (from dept_pct_*)
+        // TP task score (luôn từ dept_pct_*, độc lập NV)
         const deptPctSum = activeFields.reduce((sum, f) => sum + (parseFloat(f.deptPctValue) || 0), 0);
         const deptPctAvg = activeFields.length > 0 ? deptPctSum / activeFields.length : 0;
-        const deptTaskScore = Math.round((deptPctAvg / 100 * (this.state.taskMax || 70)) * 10) / 10;
+        const deptTaskScore = Math.round((deptPctAvg / 100 * taskMax) * 10) / 10;
 
-        const hasDeptTaskInput = activeFields.some(f => (f.deptPctValue || 0) > 0);
-        const state = this.state.record && this.state.record.state;
-        const usesDeptTask = hasDeptTaskInput && (
-            this.state.canEditDept || (state && !['draft', 'submitted'].includes(state))
-        );
-        this.state.totalTask = usesDeptTask ? deptTaskScore : nvTaskScore;
+        this.state.totalTask = nvTaskScore;
+        this.state.totalDeptTask = deptTaskScore;
 
-        // --- Tổng điểm ---
-        const useDeptGeneral = deptGeneral > 0 && state && state !== 'draft';
-        const finalGeneral = useDeptGeneral ? deptGeneral : generalScore;
-        this.state.totalScore = Math.round((finalGeneral + this.state.totalTask) * 10) / 10;
+        // --- Tổng điểm NV (tự chấm) ---
+        this.state.totalScore = Math.round((generalScore + nvTaskScore) * 10) / 10;
 
-        total += activeFields.length;
-        filled += activeFields.filter(f => f.value > 0).length;
-        this.state.filledCount = filled;
-        this.state.totalCriteria = total;
+        // --- Tổng điểm TK/TP (độc lập) ---
+        this.state.totalScoreTp = Math.round((deptGeneral + deptTaskScore) * 10) / 10;
 
+        // Xếp loại NV
         const s = this.state.totalScore;
         if (s >= 90)      this.state.classification = 'excellent';
         else if (s >= 75) this.state.classification = 'good';
         else if (s >= 50) this.state.classification = 'fair';
         else              this.state.classification = 'poor';
+
+        // Xếp loại TK/TP (độc lập)
+        const st = this.state.totalScoreTp;
+        if (st >= 90)      this.state.classificationTp = 'excellent';
+        else if (st >= 75) this.state.classificationTp = 'good';
+        else if (st >= 50) this.state.classificationTp = 'fair';
+        else               this.state.classificationTp = 'poor';
+
+        total += activeFields.length;
+        filled += activeFields.filter(f => f.value > 0).length;
+        this.state.filledCount = filled;
+        this.state.totalCriteria = total;
     }
 
     get classificationDisplay() {
@@ -380,6 +386,24 @@ export class EvaluationFormView extends Component {
             poor: { label: 'Không hoàn thành', css: 'bv-rank-poor' },
         };
         return map[this.state.classification] || { label: 'Chưa chấm', css: 'bv-rank-none' };
+    }
+
+    get classificationTpDisplay() {
+        const map = {
+            excellent: { label: 'Hoàn thành xuất sắc', css: 'bv-rank-excellent' },
+            good: { label: 'Hoàn thành tốt', css: 'bv-rank-good' },
+            fair: { label: 'Hoàn thành nhiệm vụ', css: 'bv-rank-fair' },
+            poor: { label: 'Không hoàn thành', css: 'bv-rank-poor' },
+        };
+        return map[this.state.classificationTp] || { label: 'Chưa có điểm TK/TP', css: 'bv-rank-none' };
+    }
+
+    get scoreDegTp() {
+        return Math.round(this.state.totalScoreTp / 100 * 360);
+    }
+
+    get hasTpScores() {
+        return this.state.totalDeptGeneral > 0 || this.state.totalDeptTask > 0;
     }
 
     get progressPct() {
@@ -405,17 +429,6 @@ export class EvaluationFormView extends Component {
         if (!this.state.record) return true;
         // Employee can edit when draft. Dept manager can edit when state is submitted.
         return this.state.record.state !== 'draft' && !this.state.canEditDept;
-    }
-
-    /**
-     * Return the URL to view/download a PDF evidence file for the current record.
-     * evidenceKey format: 'evidence_quantity', 'evidence_quality', etc.
-     */
-    getEvidenceUrl(evidenceKey) {
-        if (!this.evalId || !evidenceKey) return '#';
-        // Strip 'evidence_' prefix to get the field_name segment
-        const fieldName = evidenceKey.replace(/^evidence_/, '');
-        return `/bv_danh_gia/monthly_evaluation/${this.evalId}/evidence/${fieldName}`;
     }
 
     /** Hiện cột TK/TP ở Phần I khi đang ở chế độ TP hoặc đã có điểm TP */

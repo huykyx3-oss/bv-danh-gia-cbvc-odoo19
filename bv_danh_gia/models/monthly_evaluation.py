@@ -2,6 +2,8 @@ from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
 import base64
 import datetime
+import logging
+_logger = logging.getLogger(__name__)
 
 MONTHS = [
     ('1', 'Tháng 1'), ('2', 'Tháng 2'), ('3', 'Tháng 3'),
@@ -50,6 +52,18 @@ class MonthlyEvaluation(models.Model):
         ('approved', 'BGĐ phê duyệt'),
         ('rejected', 'Trả lại'),
     ], string='Trạng thái', default='draft', tracking=True, required=True)
+
+    # Loại đối tượng (phiên bản cũ + Studio có thể dùng nhiều key; giữ đủ để không gãy form / dữ liệu cũ)
+    subject_type = fields.Selection(
+        [
+            ('monthly', 'Đánh giá hằng tháng'),
+            ('contract', 'Hợp đồng lao động'),
+            ('public_employee', 'Viên chức'),
+            ('civil_servant', 'Công chức'),
+        ],
+        string='Loại phiếu',
+        default='monthly',
+    )
 
     is_manager = fields.Boolean(
         string='Giữ chức vụ lãnh đạo, quản lý',
@@ -204,7 +218,12 @@ class MonthlyEvaluation(models.Model):
     def _compute_can_edit_dept_score(self):
         is_dept_mgr = self.env.user.has_group('bv_danh_gia.group_evaluation_dept_manager')
         for rec in self:
-            rec.can_edit_dept_score = rec.state == 'submitted' and is_dept_mgr
+            result = rec.state == 'submitted' and is_dept_mgr
+            # region agent log H-B
+            _logger.info('BV_DEBUG[H-B] rec=%s state=%s is_dept_mgr=%s can_edit=%s uid=%s',
+                         rec.id, rec.state, is_dept_mgr, result, self.env.uid)
+            # endregion
+            rec.can_edit_dept_score = result
 
     @api.depends('criteria_line_ids.final_score')
     def _compute_general_score(self):

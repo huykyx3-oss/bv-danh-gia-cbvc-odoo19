@@ -225,39 +225,20 @@
                                         <div class="bv-task-cell bv-task-ev">
                                             <t t-if="state.record and state.record.state === 'draft'">
                                                 <label class="bv-ev-btn">
-                                                    <i t-att-class="state.evidenceNames[tf.evidenceKey] ? 'fa fa-check-circle' : 'fa fa-upload'"/>
-                                                    <span>
-                                                        <t t-if="state.evidenceNames[tf.evidenceKey]">
-                                                            <t t-esc="(state.evidenceNames[tf.evidenceKey] || '').length > 16 ? (state.evidenceNames[tf.evidenceKey] || '').substring(0,16) + '…' : state.evidenceNames[tf.evidenceKey]"/>
-                                                        </t>
-                                                        <t t-else="">Tải lên</t>
-                                                    </span>
+                                                    <i class="fa fa-upload"/>
+                                                    <span>Tải lên</span>
                                                     <input type="file" accept=".pdf" style="display:none"
                                                            t-on-change="(ev) => this.uploadEvidence(tf.evidenceKey, tf.evidenceNameKey, ev)"/>
                                                 </label>
-                                                <!-- Download link even in draft if file exists -->
-                                                <t t-if="state.evidenceNames[tf.evidenceKey]">
-                                                    <a t-att-href="getEvidenceUrl(tf.evidenceKey)"
-                                                       target="_blank" rel="noopener"
-                                                       style="font-size:11px;color:#0f2044;margin-left:4px;"
-                                                       title="Xem/tải xuống PDF">
-                                                        <i class="fa fa-eye"/>
-                                                    </a>
-                                                </t>
                                             </t>
-                                            <t t-elif="state.evidenceNames[tf.evidenceKey]">
-                                                <span class="bv-ev-name">
-                                                    <i class="fa fa-file-pdf-o"/>
-                                                    <t t-esc="(state.evidenceNames[tf.evidenceKey] || '').length > 16 ? (state.evidenceNames[tf.evidenceKey] || '').substring(0,16) + '…' : state.evidenceNames[tf.evidenceKey]"/>
-                                                </span>
-                                                <a t-att-href="getEvidenceUrl(tf.evidenceKey)"
-                                                   target="_blank" rel="noopener"
-                                                   style="font-size:11px;color:#0f2044;margin-left:6px;"
-                                                   title="Xem/tải xuống PDF">
-                                                    <i class="fa fa-download"/> Tải xuống
+                                            <t t-if="state.evidenceNames[tf.evidenceKey]">
+                                                <a t-att-href="'/web/content?model=bv.monthly.evaluation&amp;id=' + evalId + '&amp;field=' + tf.evidenceKey + '&amp;filename_field=' + tf.evidenceNameKey + '&amp;download=true'"
+                                                   target="_blank" class="bv-ev-dl" t-att-title="state.evidenceNames[tf.evidenceKey]">
+                                                    <i class="fa fa-download"/>
+                                                    <t t-esc="(state.evidenceNames[tf.evidenceKey] || '').length > 14 ? state.evidenceNames[tf.evidenceKey].substring(0,14) + '…' : state.evidenceNames[tf.evidenceKey]"/>
                                                 </a>
                                             </t>
-                                            <t t-else="">
+                                            <t t-if="!state.evidenceNames[tf.evidenceKey] and !(state.record and state.record.state === 'draft')">
                                                 <span style="font-size:11px;color:#bbb;font-style:italic;">—</span>
                                             </t>
                                         </div>
@@ -287,54 +268,63 @@
                             <span class="bv-section-title">Tổng hợp điểm &amp; nhận xét</span>
                         </div>
 
-                        <!-- Bảng tổng hợp điểm: NV vs TK -->
-                        <div style="padding:12px 16px;">
-                            <table style="width:100%;border-collapse:collapse;font-size:13px;">
-                                <thead>
-                                    <tr style="background:#f4f6f9;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6c757d;">
-                                        <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #dee2e6;">Khoản mục</th>
-                                        <th style="padding:8px 12px;text-align:center;border-bottom:2px solid #dee2e6;border-left:1px solid #dee2e6;">NV tự chấm</th>
-                                        <th style="padding:8px 12px;text-align:center;border-bottom:2px solid #dee2e6;border-left:1px solid #dee2e6;">TK/TP chấm</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style="border-bottom:1px solid #eceae4;">
-                                        <td style="padding:8px 12px;">I. Tiêu chí chung</td>
-                                        <td style="padding:8px 12px;text-align:center;border-left:1px solid #eceae4;color:#6b6760;">
-                                            <t t-esc="state.totalGeneralNv"/> đ
-                                        </td>
-                                        <td style="padding:8px 12px;text-align:center;border-left:1px solid #eceae4;font-weight:600;">
-                                            <t t-esc="state.totalGeneral"/> / <t t-esc="state.generalMax"/> đ
-                                        </td>
-                                    </tr>
-                                    <tr style="border-bottom:1px solid #eceae4;">
-                                        <td style="padding:8px 12px;">II. Điểm KQTHNV</td>
-                                        <td style="padding:8px 12px;text-align:center;border-left:1px solid #eceae4;color:#6b6760;">
-                                            <t t-esc="state.totalTaskNv"/> đ
-                                        </td>
-                                        <td style="padding:8px 12px;text-align:center;border-left:1px solid #eceae4;font-weight:600;">
-                                            <t t-esc="state.totalTask"/> / <t t-esc="state.taskMax"/> đ
-                                        </td>
-                                    </tr>
-                                    <tr style="background:#fffbe8;font-weight:800;">
-                                        <td style="padding:10px 12px;">Tổng điểm</td>
-                                        <td style="padding:10px 12px;text-align:center;border-left:1px solid #eceae4;color:#6b6760;font-weight:600;">
-                                            <t t-esc="state.totalScoreNv"/>
-                                        </td>
-                                        <td style="padding:10px 12px;text-align:center;border-left:1px solid #eceae4;font-size:1.2em;color:#c9a84c;">
-                                            <t t-esc="state.totalScore"/> / 100
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
-                                <span style="font-size:12px;color:#6b6760;font-weight:600;">Xếp loại:</span>
-                                <span t-att-class="'bv-score-label ' + classificationDisplay.css"
-                                      style="font-size:1.05em;font-weight:700;padding:4px 14px;border-radius:20px;">
-                                    <t t-esc="classificationDisplay.label"/>
-                                </span>
+                        <!-- Bảng tổng hợp điểm NV tự chấm -->
+                        <div class="bv-info-grid" style="padding:12px 20px 0;">
+                            <div>
+                                <div class="bv-field-label">Phần I – Tiêu chí chung (NV tự chấm)</div>
+                                <div class="bv-field-value">
+                                    <t t-esc="state.totalGeneral"/> / <t t-esc="state.generalMax"/> điểm
+                                </div>
+                            </div>
+                            <div>
+                                <div class="bv-field-label">Phần II – KQTHNV (NV tự chấm)</div>
+                                <div class="bv-field-value">
+                                    <t t-esc="state.totalTask"/> / <t t-esc="state.taskMax"/> điểm
+                                </div>
+                            </div>
+                            <div class="bv-full">
+                                <div class="bv-field-label" style="font-size:12px;color:#6b6760;">Tổng điểm NV tự chấm</div>
+                                <div class="bv-field-value" style="font-size:1.2em;font-weight:700;color:#4a5568;">
+                                    <t t-esc="state.totalScore"/> / 100
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Bảng tổng hợp điểm TK/TP (nổi bật, chỉ hiện khi có dữ liệu TP) -->
+                        <t t-if="hasTpScores or state.canEditDept">
+                            <div style="margin:12px 20px 0;padding:14px 16px;background:#fffbf0;border:2px solid #c9a84c;border-radius:10px;">
+                                <div style="font-size:12px;font-weight:700;color:#7a5e00;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">
+                                    <i class="fa fa-star"/> Kết quả đánh giá theo TK/TP chấm
+                                </div>
+                                <div class="bv-info-grid" style="padding:0;">
+                                    <div>
+                                        <div class="bv-field-label">Phần I – Tiêu chí chung</div>
+                                        <div class="bv-field-value" style="font-weight:700;">
+                                            <t t-esc="state.totalDeptGeneral"/> / <t t-esc="state.generalMax"/>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="bv-field-label">Phần II – KQTHNV</div>
+                                        <div class="bv-field-value" style="font-weight:700;">
+                                            <t t-esc="state.totalDeptTask"/> / <t t-esc="state.taskMax"/>
+                                        </div>
+                                    </div>
+                                    <div class="bv-full">
+                                        <div class="bv-field-label" style="font-size:13px;font-weight:700;color:#7a5e00;">Tổng điểm (TK/TP)</div>
+                                        <div class="bv-field-value" style="font-size:1.5em;font-weight:800;color:#c9a84c;">
+                                            <t t-esc="state.totalScoreTp"/> / 100
+                                        </div>
+                                    </div>
+                                    <div class="bv-full">
+                                        <div class="bv-field-label">Xếp loại (TK/TP)</div>
+                                        <div t-att-class="'bv-field-value bv-score-label ' + classificationTpDisplay.css"
+                                             style="font-size:1.1em;font-weight:700;">
+                                            <t t-esc="classificationTpDisplay.label"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
 
                         <!-- Nhận xét -->
                         <div style="border-top:1px solid #eceae4;padding:16px 20px;">
@@ -425,15 +415,41 @@
                         <span style="font-size:18px;">&#x1F3AF;</span>
                         <h3>Bảng điểm thời gian thực</h3>
                     </div>
-                    <div class="bv-score-total-display">
-                        <div class="bv-score-circle" t-att-style="'background:conic-gradient(#c9a84c ' + scoreDeg + 'deg, #eceae4 0deg);'">
-                            <div class="bv-score-number"><t t-esc="state.totalScore"/></div>
-                            <div class="bv-score-denom">/ 100</div>
+
+                    <!-- Hiện điểm TK/TP nổi bật khi đang ở chế độ TP hoặc đã có điểm TP -->
+                    <t t-if="hasTpScores or state.canEditDept">
+                        <div style="margin-bottom:6px;padding:4px 12px;background:#fffbf0;border-bottom:2px solid #c9a84c;">
+                            <div style="font-size:10px;font-weight:700;color:#7a5e00;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Điểm TK/TP chấm</div>
+                            <div class="bv-score-total-display" style="padding:8px 0 4px;">
+                                <div class="bv-score-circle" t-att-style="'background:conic-gradient(#c9a84c ' + scoreDegTp + 'deg, #eceae4 0deg);'">
+                                    <div class="bv-score-number"><t t-esc="state.totalScoreTp"/></div>
+                                    <div class="bv-score-denom">/ 100</div>
+                                </div>
+                                <div t-att-class="'bv-score-label ' + classificationTpDisplay.css" style="font-size:12px;">
+                                    <t t-esc="classificationTpDisplay.label"/>
+                                </div>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:11px;color:#7a5e00;padding:4px 0 8px;">
+                                <span>Phần I: <strong><t t-esc="state.totalDeptGeneral"/></strong></span>
+                                <span>Phần II: <strong><t t-esc="state.totalDeptTask"/></strong></span>
+                            </div>
                         </div>
-                        <div t-att-class="'bv-score-label ' + classificationDisplay.css">
-                            <t t-esc="classificationDisplay.label"/>
+                        <div style="padding:4px 12px;margin-bottom:4px;">
+                            <div style="font-size:10px;font-weight:600;color:#9a9590;text-transform:uppercase;letter-spacing:.4px;">NV tự chấm (tham khảo)</div>
                         </div>
-                    </div>
+                    </t>
+                    <t t-else="">
+                        <div class="bv-score-total-display">
+                            <div class="bv-score-circle" t-att-style="'background:conic-gradient(#c9a84c ' + scoreDeg + 'deg, #eceae4 0deg);'">
+                                <div class="bv-score-number"><t t-esc="state.totalScore"/></div>
+                                <div class="bv-score-denom">/ 100</div>
+                            </div>
+                            <div t-att-class="'bv-score-label ' + classificationDisplay.css">
+                                <t t-esc="classificationDisplay.label"/>
+                            </div>
+                        </div>
+                    </t>
+
                     <div class="bv-score-breakdown">
                         <div class="bv-score-row">
                             <div style="flex:1;">
@@ -465,7 +481,7 @@
                         </div>
 
                         <div class="bv-score-row" style="border-top:2px solid #c9a84c;margin-top:4px;padding-top:12px;">
-                            <span class="bv-score-row-label" style="font-weight:700;">Tổng điểm</span>
+                            <span class="bv-score-row-label" style="font-weight:700;">Tổng NV tự chấm</span>
                             <span class="bv-score-row-val" style="font-size:16px;color:#c9a84c;">
                                 <t t-esc="state.totalScore"/><span class="bv-of"> /100</span>
                             </span>
